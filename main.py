@@ -9,9 +9,6 @@ from text import get_text_surface
 from sprites import *
 
 
-print(300 - 200)
-
-
 # Создаем игру и окно
 pygame.init()
 pygame.mixer.init()
@@ -25,10 +22,7 @@ clock = pygame.time.Clock()
 bg = pygame.image.load('images/background-test.png').convert_alpha()
 
 player_movement = [
-    pygame.image.load('images/player/base_ship/base-ship.png').convert_alpha(),
-    pygame.image.load('images/player/base_ship/base-ship_move_1.png').convert_alpha(),
-    pygame.image.load('images/player/base_ship/base-ship_move_2.png').convert_alpha(),
-    pygame.image.load('images/player/base_ship/base-ship_move_3.png').convert_alpha()
+    pygame.image.load('images/player/ship_2/ship_2.png').convert_alpha(),
 ]
 
 ship_movement_down = [
@@ -49,26 +43,58 @@ player_animate_counter = 0
 bg_y = 0
 bg_x = 0
 
-# Вычисляем точку для позиционирования игрока
-player_rect = player_movement[0].get_rect()
-player_w, player_h = player_rect.size
-player_position = ((config.WIDTH / 2) - (player_w / 2), (config.HEIGHT / 2) - (player_h / 2))
+
+def smooth_rotation(first_angle, second_angle):
+    # Логика поворота с симуляцией массы корабля
+    difference = second_angle - first_angle
+    if difference > 180:
+        difference -= 360
+    elif difference < -180:
+        difference += 360
+
+    # Замедление в конце поворота
+    if abs(difference) < config.ROTATE_SLOWDOWN_THRESHOLD:
+        rotate_speed = max(config.MIN_ROTATE_SPEED,
+                           config.ROTATE_SPEED * abs(difference) // config.ROTATE_SLOWDOWN_THRESHOLD)
+    else:
+        rotate_speed = config.ROTATE_SPEED
+
+    if difference != 0:
+
+        if abs(difference) < rotate_speed:
+            first_angle += difference
+        else:
+            first_angle += math.copysign(rotate_speed, difference)
+
+    first_angle %= 360
+    return first_angle
 
 
 def calculate_angle(mouse_cord, player_cord):
     m_x, m_y = mouse_cord
     p_x, p_y = player_cord
 
-    angle = math.atan2(p_y - m_y, m_x - p_x)
+    result_angle = math.atan2(p_y - m_y, m_x - p_x)
 
-    if angle < 0:  # Если угол отрицательный, добавляем 2 * пи
-        angle += 2 * math.pi
+    if result_angle < 0:  # Если угол отрицательный, добавляем 2 * пи
+        result_angle += 2 * math.pi
 
-    return angle * 180 / math.pi
+    return result_angle * 180 / math.pi
 
 
-previous_angle = None
-player_angel_rotate = list()
+def get_movement_vector(angle, speed):
+    # Преобразование угла из градусов в радианы
+    radian_angle = math.radians(angle)
+
+    # Вычисление изменений по осям x и y
+    dx = speed * math.cos(radian_angle)
+    dy = speed * math.sin(radian_angle)
+
+    return dx, dy
+
+
+current_angle = None
+player_position = screen.get_rect().center
 
 # Цикл игры
 running = True
@@ -77,19 +103,11 @@ while running:
     keys = pygame.key.get_pressed()
 
     # координаты мыши/игрока и их относительный угол
-    m_cord = pygame.mouse.get_pos()
-    p_cord = screen.get_rect().center
-    angel = int(calculate_angle(m_cord, p_cord))
+    m_cord = list(pygame.mouse.get_pos())
+    desired_angle = int(calculate_angle(m_cord, player_position))
 
-    dx = m_cord[0] - p_cord[0]
-    dy = m_cord[1] - p_cord[1]
-    distance = math.sqrt(dx ** 2 + dy ** 2)
-
-    if distance != 0:
-        move_x = (dx / distance) * config.MOVE_SPEED
-        move_y = (dy / distance) * config.MOVE_SPEED
-    else:
-        move_x, move_y = 0, 0
+    dx = m_cord[0] - player_position[0]
+    dy = m_cord[1] - player_position[1]
 
     screen.blit(bg, (bg_x, bg_y))
     screen.blit(bg, (bg_x, bg_y - config.HEIGHT))
@@ -102,38 +120,33 @@ while running:
     screen.blit(bg, (bg_x + config.WIDTH, bg_y - config.HEIGHT))
 
     # Рисуем корабль
+    if current_angle is None or current_angle == desired_angle:
+        current_angle = desired_angle
 
-    if previous_angle is None or previous_angle == angel:
-        previous_angle = angel
+    player = player_movement[0]
+    rotated_player = pygame.transform.rotate(player, current_angle - 90)
+    rotated_rect = rotated_player.get_rect(center=player_position)
+    screen.blit(rotated_player, rotated_rect.topleft)
 
-    player = player_movement[player_animate_counter]
-    rotated_player = pygame.transform.rotate(player, previous_angle - 90)
-    screen.blit(rotated_player, player_position)
-
-    if previous_angle < angel:
-        previous_angle += math.ceil((angel - previous_angle) / config.ROTATE_SPEED)
-
-    elif previous_angle > angel:
-        previous_angle -= math.ceil((previous_angle - angel) / config.ROTATE_SPEED)
+    # активируем вращение корабля
+    current_angle = smooth_rotation(current_angle, desired_angle)
 
     # движение по нажатию на кнопку W
     if keys[pygame.K_w]:
+
+        move_x, move_y = get_movement_vector(current_angle, config.MOVE_SPEED)
 
         if keys[pygame.K_LALT]:
             move_x *= 2
             move_y *= 2
 
+        # if current_angle == desired_angle:
+        #     player_position = player_position[0] + move_x, player_position[1] + move_y
+
         bg_x -= move_x
-        bg_y -= move_y
+        bg_y += move_y
 
-        if player_animate_counter == 3:
-            player_animate_counter = 1
-        else:
-            player_animate_counter += 1
-    else:
-        player_animate_counter = 0
-
-    text = f'mouse: {m_cord} | ship: {p_cord} | angle: {angel} | prev_angl: {previous_angle} | dife: {(angel - previous_angle)}'
+    text = f'mouse: {m_cord}, rev_mouse: '
     screen.blit(get_text_surface(text), (100, 100))
 
     # Держим цикл на правильной скорости
