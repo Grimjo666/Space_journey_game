@@ -9,6 +9,9 @@ from text import get_text_surface
 from sprites import *
 
 
+print(300 - 200)
+
+
 # Создаем игру и окно
 pygame.init()
 pygame.mixer.init()
@@ -58,12 +61,19 @@ def calculate_angle(mouse_cord, player_cord):
 
     angle = math.atan2(p_y - m_y, m_x - p_x)
 
+    if angle < 0:  # Если угол отрицательный, добавляем 2 * пи
+        angle += 2 * math.pi
+
     return angle * 180 / math.pi
 
+
+previous_angle = None
+player_angel_rotate = list()
 
 # Цикл игры
 running = True
 while running:
+
     keys = pygame.key.get_pressed()
 
     # координаты мыши/игрока и их относительный угол
@@ -78,7 +88,7 @@ while running:
     if distance != 0:
         move_x = (dx / distance) * config.MOVE_SPEED
         move_y = (dy / distance) * config.MOVE_SPEED
-    elif 0 <= distance <= 100:
+    else:
         move_x, move_y = 0, 0
 
     screen.blit(bg, (bg_x, bg_y))
@@ -92,9 +102,19 @@ while running:
     screen.blit(bg, (bg_x + config.WIDTH, bg_y - config.HEIGHT))
 
     # Рисуем корабль
+
+    if previous_angle is None or previous_angle == angel:
+        previous_angle = angel
+
     player = player_movement[player_animate_counter]
-    rotated_player = pygame.transform.rotate(player, angel - 90)
+    rotated_player = pygame.transform.rotate(player, previous_angle - 90)
     screen.blit(rotated_player, player_position)
+
+    if previous_angle < angel:
+        previous_angle += math.ceil((angel - previous_angle) / config.ROTATE_SPEED)
+
+    elif previous_angle > angel:
+        previous_angle -= math.ceil((previous_angle - angel) / config.ROTATE_SPEED)
 
     # движение по нажатию на кнопку W
     if keys[pygame.K_w]:
@@ -113,7 +133,7 @@ while running:
     else:
         player_animate_counter = 0
 
-    text = f'mouse: {m_cord} | ship: {p_cord} | angle: {angel} | distance: {distance}'
+    text = f'mouse: {m_cord} | ship: {p_cord} | angle: {angel} | prev_angl: {previous_angle} | dife: {(angel - previous_angle)}'
     screen.blit(get_text_surface(text), (100, 100))
 
     # Держим цикл на правильной скорости
