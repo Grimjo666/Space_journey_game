@@ -3,13 +3,22 @@ import pygame
 
 
 class BaseShip:
-    MOVE_SPEED = 0
+    MAX_SPEED = 0
+    WEIGHT = 0
+    ENGINE_POWER = 0
+
     ROTATE_SPEED = 0
     ROTATE_SLOWDOWN_THRESHOLD = 0
     MIN_ROTATE_SPEED = 0
 
     def __init__(self, ship_position):
         self.ship_position = ship_position
+        self.speed_x = self.speed_y = 0
+        self.move_vector_x = self.move_vector_y = 0
+
+
+    def get_coordinates(self):
+        return self.speed_x, self.speed_y
 
     def calculate_angle(self):
         m_x, m_y = pygame.mouse.get_pos()
@@ -27,10 +36,11 @@ class BaseShip:
         radian_angle = math.radians(angle)
 
         # Вычисление изменений по осям x и y
-        dx = round(self.MOVE_SPEED * math.cos(radian_angle), 3)
-        dy = round(self.MOVE_SPEED * math.sin(radian_angle), 3)
+        dx = round(self.MAX_SPEED * math.cos(radian_angle), 3)
+        dy = round(self.MAX_SPEED * math.sin(radian_angle), 3)
 
-        return dx, dy
+        self.move_vector_x = dx
+        self.move_vector_y = dy
 
     def smooth_rotation(self, current_angle, desired_angle):
         # Логика поворота с симуляцией массы корабля
@@ -57,11 +67,45 @@ class BaseShip:
         current_angle %= 360
         return current_angle
 
+    @staticmethod
+    def lerp(start, end, proportion):
+        return round(start + (end - start) * proportion, 3)
+
+    def move_ship(self):
+        acceleration = self.ENGINE_POWER / self.WEIGHT
+        self.speed_x = self.lerp(self.speed_x, self.move_vector_x, acceleration)
+        self.speed_y = self.lerp(self.speed_y, self.move_vector_y, acceleration)
+
+        return self.speed_x, self.speed_y
+
+    def deceleration_ship(self):
+        deceleration_x = deceleration_y = self.ENGINE_POWER / self.WEIGHT
+        if abs(self.speed_x) < 2:
+            deceleration_x *= 3
+        if abs(self.speed_y) < 2:
+            deceleration_y *= 3
+
+        self.speed_x = self.lerp(self.speed_x, 0, deceleration_x)
+        self.speed_y = self.lerp(self.speed_y, 0, deceleration_y)
+
+        return self.speed_x, self.speed_y
+
+    def draw_accelerators(self):
+        pass
+
 
 class Cruiser(BaseShip):
-    MOVE_SPEED = 5
+    MAX_SPEED = 17
+    WEIGHT = 500
+    ENGINE_POWER = 20
+
     ROTATE_SPEED = 3
     ROTATE_SLOWDOWN_THRESHOLD = 60
     MIN_ROTATE_SPEED = 1
-    SPRITE = pygame.image.load('images/ship_sprites/ship_2/ship_2.png')
 
+    def __init__(self, ship_position):
+        self.sprite = pygame.image.load('images/ship_sprites/ship_2/ship_2.png').convert_alpha()
+        self.accelerator_sprites = [
+
+        ]
+        super().__init__(ship_position)
