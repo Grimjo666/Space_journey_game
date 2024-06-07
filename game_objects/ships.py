@@ -12,13 +12,24 @@ class BaseShip:
     MIN_ROTATE_SPEED = 0
 
     def __init__(self, ship_position):
+        self.sprite = None
+        self.current_sprite = None
+        self.accelerator_sprites = None
+        self.rotate_sprites = None
+        self.motion_sprite_counter = -1
+
         self.ship_position = ship_position
         self.speed_x = self.speed_y = 0
         self.move_vector_x = self.move_vector_y = 0
+        self.current_angle = 0
 
+    def get_sprite(self):
+        if self.current_sprite:
+            sprite = self.current_sprite
+        else:
+            sprite = self.sprite
 
-    def get_coordinates(self):
-        return self.speed_x, self.speed_y
+        return pygame.transform.rotate(sprite, self.current_angle - 90)
 
     def calculate_angle(self):
         m_x, m_y = pygame.mouse.get_pos()
@@ -31,9 +42,9 @@ class BaseShip:
 
         return int(result_angle * 180 / math.pi)
 
-    def get_movement_vector(self, angle):
+    def get_movement_vector(self):
         # Преобразование угла из градусов в радианы
-        radian_angle = math.radians(angle)
+        radian_angle = math.radians(self.current_angle)
 
         # Вычисление изменений по осям x и y
         dx = round(self.MAX_SPEED * math.cos(radian_angle), 3)
@@ -42,9 +53,9 @@ class BaseShip:
         self.move_vector_x = dx
         self.move_vector_y = dy
 
-    def smooth_rotation(self, current_angle, desired_angle):
+    def smooth_rotation(self):
         # Логика поворота с симуляцией массы корабля
-        difference = desired_angle - current_angle
+        difference = self.calculate_angle() - self.current_angle
         if difference > 180:
             difference -= 360
         elif difference < -180:
@@ -60,12 +71,12 @@ class BaseShip:
         if difference != 0:
 
             if abs(difference) < rotate_speed:
-                current_angle += difference
+                self.current_angle += difference
             else:
-                current_angle += math.copysign(rotate_speed, difference)
+                self.current_angle += math.copysign(rotate_speed, difference)
 
-        current_angle %= 360
-        return current_angle
+        self.current_angle %= 360
+        return self.current_angle
 
     @staticmethod
     def lerp(start, end, proportion):
@@ -90,7 +101,25 @@ class BaseShip:
 
         return self.speed_x, self.speed_y
 
-    def draw_accelerators(self):
+    def accelerator_animation(self):
+        self.motion_sprite_counter += 1
+        if self.motion_sprite_counter == 4:
+            self.motion_sprite_counter = 0
+
+        self.current_sprite = self.accelerator_sprites[self.motion_sprite_counter]
+
+    def rotate_animation(self):
+        if self.current_angle < self.calculate_angle():
+
+            self.motion_sprite_counter += 1
+            if self.motion_sprite_counter == 4:
+                self.motion_sprite_counter = 0
+
+            self.current_sprite = self.rotate_sprites[self.motion_sprite_counter]
+        else:
+            self.current_sprite = self.sprite
+
+    def inactivity_animation(self):
         pass
 
 
@@ -104,8 +133,13 @@ class Cruiser(BaseShip):
     MIN_ROTATE_SPEED = 1
 
     def __init__(self, ship_position):
+        super().__init__(ship_position)
         self.sprite = pygame.image.load('images/ship_sprites/ship_2/ship_2.png').convert_alpha()
         self.accelerator_sprites = [
-
+            pygame.image.load(f'images/ship_sprites/ship_2/accelerators/main_{i}.png').convert_alpha()
+            for i in range(1, 5)
         ]
-        super().__init__(ship_position)
+        self.rotate_sprites = [
+            pygame.image.load(f'images/ship_sprites/ship_2/accelerators/rotate_left_{i}.png').convert_alpha()
+            for i in range(1, 5)
+        ]
