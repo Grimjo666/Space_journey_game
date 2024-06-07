@@ -52,15 +52,13 @@ while running:
     screen.blit(bg, (bg_x - config.WIDTH, bg_y + config.HEIGHT))
     screen.blit(bg, (bg_x + config.WIDTH, bg_y - config.HEIGHT))
 
-    # активируем вращение корабля
-    player_ship.smooth_rotation()
+    player_ship.inactivity_animation()
 
     # движение по нажатию на кнопку W
     if keys[pygame.K_w] and not keys[pygame.K_SPACE]:
         player_ship.accelerator_animation(screen)
 
         # вектор движения корабля
-        player_ship.get_movement_vector()
         speed_x, speed_y = player_ship.move_ship()
 
         # ускорение

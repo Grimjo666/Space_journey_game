@@ -16,7 +16,8 @@ class BaseShip:
         self.current_sprite = None
         self.ship_rect = None
         self.accelerator_sprites = None
-        self.rotate_sprites = None
+        self.rotate_left_sprites = None
+        self.rotate_right_sprites = None
         self.motion_sprite_counter = -1
 
         self.ship_position = ship_position
@@ -69,13 +70,14 @@ class BaseShip:
                 self.current_angle += math.copysign(rotate_speed, difference)
 
         self.current_angle %= 360
-        return self.current_angle
 
     @staticmethod
     def lerp(start, end, proportion):
         return round(start + (end - start) * proportion, 3)
 
     def move_ship(self):
+        self.get_movement_vector()
+
         acceleration = self.ENGINE_POWER / self.WEIGHT
         self.speed_x = self.lerp(self.speed_x, self.move_vector_x, acceleration)
         self.speed_y = self.lerp(self.speed_y, self.move_vector_y, acceleration)
@@ -108,20 +110,29 @@ class BaseShip:
         self.draw_sprite(surface, sprite)
 
     def rotate_animation(self, surface):
-        if self.current_angle < self.calculate_angle():
+        # Активируем вращение корабля
+        self.smooth_rotation()
 
-            self.motion_sprite_counter += 1
-            if self.motion_sprite_counter == 4:
-                self.motion_sprite_counter = 0
+        difference = self.calculate_angle() - self.current_angle
+        if difference > 180:
+            difference -= 360
+        elif difference < -180:
+            difference += 360
 
-            sprite = self.current_sprite = self.rotate_sprites[self.motion_sprite_counter]
+        if abs(difference) > 0.5:
+            if difference > 0:
+                self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self.rotate_left_sprites)
+                self.current_sprite = self.rotate_left_sprites[self.motion_sprite_counter]
+            else:
+                self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self.rotate_right_sprites)
+                self.current_sprite = self.rotate_right_sprites[self.motion_sprite_counter]
         else:
-            sprite = self.current_sprite = self.sprite
+            self.current_sprite = self.sprite
 
-        self.draw_sprite(surface, sprite)
+        self.draw_sprite(surface, self.current_sprite)
 
     def inactivity_animation(self):
-        pass
+        self.current_sprite = self.sprite
 
 
 class Cruiser(BaseShip):
@@ -140,7 +151,11 @@ class Cruiser(BaseShip):
             pygame.image.load(f'images/ship_sprites/ship_2/accelerators/main_{i}.png').convert_alpha()
             for i in range(1, 5)
         ]
-        self.rotate_sprites = [
+        self.rotate_left_sprites = [
             pygame.image.load(f'images/ship_sprites/ship_2/accelerators/rotate_left_{i}.png').convert_alpha()
+            for i in range(1, 5)
+        ]
+        self.rotate_right_sprites = [
+            pygame.image.load(f'images/ship_sprites/ship_2/accelerators/rotate_right_{i}.png').convert_alpha()
             for i in range(1, 5)
         ]
