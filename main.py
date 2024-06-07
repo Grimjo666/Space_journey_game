@@ -34,12 +34,11 @@ player_position = screen.get_rect().center
 
 player_ship = ships.Cruiser(player_position)
 
-fps_counter = 0
+fps = 0
 
 # Цикл игры
 running = True
 while running:
-    fps_counter += 1
 
     keys = pygame.key.get_pressed()
 
@@ -53,19 +52,12 @@ while running:
     screen.blit(bg, (bg_x - config.WIDTH, bg_y + config.HEIGHT))
     screen.blit(bg, (bg_x + config.WIDTH, bg_y - config.HEIGHT))
 
-    # Рисуем корабль
-    rotated_player = player_ship.get_sprite()
-    rotated_rect = rotated_player.get_rect(center=player_position)
-    screen.blit(rotated_player, rotated_rect.topleft)
-
     # активируем вращение корабля
     player_ship.smooth_rotation()
 
     # движение по нажатию на кнопку W
     if keys[pygame.K_w] and not keys[pygame.K_SPACE]:
-        if fps_counter % 2 == 0:
-            player_ship.accelerator_animation()
-            fps_counter = 0
+        player_ship.accelerator_animation(screen)
 
         # вектор движения корабля
         player_ship.get_movement_vector()
@@ -78,8 +70,8 @@ while running:
     elif keys[pygame.K_SPACE]:
         speed_x, speed_y = player_ship.deceleration_ship()
 
-    else:
-        player_ship.rotate_animation()
+    # Рисуем корабль
+    player_ship.rotate_animation(screen)
 
     bg_x -= speed_x
     bg_y += speed_y
@@ -96,6 +88,6 @@ while running:
             running = False
 
     # после отрисовки всего, обновляем экран
-    pygame.display.update()
+    pygame.display.flip()
 
 pygame.quit()

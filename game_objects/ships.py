@@ -14,6 +14,7 @@ class BaseShip:
     def __init__(self, ship_position):
         self.sprite = None
         self.current_sprite = None
+        self.ship_rect = None
         self.accelerator_sprites = None
         self.rotate_sprites = None
         self.motion_sprite_counter = -1
@@ -22,14 +23,6 @@ class BaseShip:
         self.speed_x = self.speed_y = 0
         self.move_vector_x = self.move_vector_y = 0
         self.current_angle = 0
-
-    def get_sprite(self):
-        if self.current_sprite:
-            sprite = self.current_sprite
-        else:
-            sprite = self.sprite
-
-        return pygame.transform.rotate(sprite, self.current_angle - 90)
 
     def calculate_angle(self):
         m_x, m_y = pygame.mouse.get_pos()
@@ -101,23 +94,31 @@ class BaseShip:
 
         return self.speed_x, self.speed_y
 
-    def accelerator_animation(self):
+    def draw_sprite(self, surface, sprite):
+        sprite = pygame.transform.rotate(sprite, self.current_angle - 90)
+        player_rect = sprite.get_rect(center=self.ship_position)
+        surface.blit(sprite, player_rect.topleft)
+
+    def accelerator_animation(self, surface):
         self.motion_sprite_counter += 1
         if self.motion_sprite_counter == 4:
             self.motion_sprite_counter = 0
 
-        self.current_sprite = self.accelerator_sprites[self.motion_sprite_counter]
+        sprite = self.current_sprite = self.accelerator_sprites[self.motion_sprite_counter]
+        self.draw_sprite(surface, sprite)
 
-    def rotate_animation(self):
+    def rotate_animation(self, surface):
         if self.current_angle < self.calculate_angle():
 
             self.motion_sprite_counter += 1
             if self.motion_sprite_counter == 4:
                 self.motion_sprite_counter = 0
 
-            self.current_sprite = self.rotate_sprites[self.motion_sprite_counter]
+            sprite = self.current_sprite = self.rotate_sprites[self.motion_sprite_counter]
         else:
-            self.current_sprite = self.sprite
+            sprite = self.current_sprite = self.sprite
+
+        self.draw_sprite(surface, sprite)
 
     def inactivity_animation(self):
         pass
