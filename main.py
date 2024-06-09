@@ -3,7 +3,7 @@ import pygame
 
 import config
 from text import get_text_surface
-from game_objects import ships
+from game_objects import ships, space
 
 # Создаем игру и окно
 pygame.init()
@@ -15,7 +15,9 @@ pygame.display.set_icon(icon)
 clock = pygame.time.Clock()
 
 # спрайты и изображения
-bg = pygame.image.load('images/background-test.png').convert_alpha()
+meteorite_sprite = pygame.image.load('images/space_objects/meteorites/meteorite_1.png').convert_alpha()
+
+background = space.SpaceBG(screen)
 
 # звуки
 bg_sound = pygame.mixer.Sound('sounds/bg_sound.mp3')
@@ -24,17 +26,16 @@ bg_sound.set_volume(config.BG_SOUND)
 bg_sound.play()
 
 # переменные анимации движения
-bg_y = 0
-bg_x = 0
+stars_bg_y = 0
+stars_bg_x = 0
 
 speed_x = speed_y = 0
 
-player_move = False
 player_position = screen.get_rect().center
-
 player_ship = ships.Cruiser(player_position)
 
-fps = 0
+met_x, met_y = 0, 0
+
 
 # Цикл игры
 running = True
@@ -42,15 +43,9 @@ while running:
 
     keys = pygame.key.get_pressed()
 
-    screen.blit(bg, (bg_x, bg_y))
-    screen.blit(bg, (bg_x, bg_y - config.HEIGHT))
-    screen.blit(bg, (bg_x, bg_y + config.HEIGHT))
-    screen.blit(bg, (bg_x - config.WIDTH, bg_y))
-    screen.blit(bg, (bg_x + config.WIDTH, bg_y))
-    screen.blit(bg, (bg_x - config.WIDTH, bg_y - config.HEIGHT))
-    screen.blit(bg, (bg_x + config.WIDTH, bg_y + config.HEIGHT))
-    screen.blit(bg, (bg_x - config.WIDTH, bg_y + config.HEIGHT))
-    screen.blit(bg, (bg_x + config.WIDTH, bg_y - config.HEIGHT))
+    background.draw_stars_bg(speed_x, speed_y)
+
+    screen.blit(meteorite_sprite, (met_x, met_y))
 
     player_ship.inactivity_animation()
 
@@ -71,10 +66,10 @@ while running:
     # Рисуем корабль
     player_ship.rotate_animation(screen)
 
-    bg_x -= speed_x
-    bg_y += speed_y
+    met_x -= speed_x
+    met_y += speed_y
 
-    text = f'{player_ship.current_angle} {player_ship.calculate_angle()} x {speed_x} y {speed_y}'
+    text = f'x {stars_bg_x}, y {stars_bg_y} {config.HEIGHT}'
     screen.blit(get_text_surface(text), (100, 100))
 
     # Держим цикл на правильной скорости

@@ -86,10 +86,12 @@ class BaseShip:
 
     def deceleration_ship(self):
         deceleration_x = deceleration_y = self.ENGINE_POWER / self.WEIGHT
+
+        # Если скорость ниже 2 то ускоряем силу торможения
         if abs(self.speed_x) < 2:
-            deceleration_x *= 3
+            deceleration_x *= 10
         if abs(self.speed_y) < 2:
-            deceleration_y *= 3
+            deceleration_y *= 10
 
         self.speed_x = self.lerp(self.speed_x, 0, deceleration_x)
         self.speed_y = self.lerp(self.speed_y, 0, deceleration_y)
@@ -119,6 +121,7 @@ class BaseShip:
         elif difference < -180:
             difference += 360
 
+        # Если разница в углах больше, то вычисляем направление вращения
         if abs(difference) > 0.5:
             if difference > 0:
                 self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self.rotate_left_sprites)
