@@ -1,5 +1,7 @@
 # Pygame шаблон - скелет для нового проекта Pygame
 import pygame
+import pymunk
+import pymunk.pygame_util
 
 import config
 from text import get_text_surface
@@ -14,10 +16,12 @@ icon = pygame.image.load('images/snake_icon.png').convert_alpha()
 pygame.display.set_icon(icon)
 clock = pygame.time.Clock()
 
-# спрайты и изображения
-meteorite_sprite = pygame.image.load('images/space_objects/meteorites/meteorite_1.png').convert_alpha()
 
 background = space.SpaceBG(screen)
+
+space_pymunk = pymunk.Space()
+
+draw_options = pymunk.pygame_util.DrawOptions(screen)
 
 # звуки
 bg_sound = pygame.mixer.Sound('sounds/bg_sound.mp3')
@@ -25,27 +29,31 @@ bg_sound = pygame.mixer.Sound('sounds/bg_sound.mp3')
 bg_sound.set_volume(config.BG_SOUND)
 bg_sound.play()
 
-# переменные анимации движения
-stars_bg_y = 0
-stars_bg_x = 0
-
-speed_x = speed_y = 0
 
 player_position = screen.get_rect().center
 player_ship = ships.Cruiser(player_position)
 
-met_x, met_y = 0, 0
+meteorite = space.Meteorite((0, 500))
+meteorite_2 = space.Meteorite((1000, 0))
 
+space_pymunk.add(meteorite.body, meteorite.get_circle_shape())
+space_pymunk.add(meteorite_2.body, meteorite_2.get_circle_shape())
+space_pymunk.add(player_ship.body, player_ship.get_circle_shape())
+meteorite.body.velocity = (200, 0)
 
 # Цикл игры
 running = True
 while running:
 
+    camera_offset = pymunk.Vec2d(player_position[0] - player_ship.body.position.x, player_position[1] - player_ship.body.position.y)
+    for body in space_pymunk.bodies:
+        body.position += camera_offset
+
     keys = pygame.key.get_pressed()
 
-    background.draw_stars_bg(speed_x, speed_y)
+    background.draw_stars_bg(*camera_offset)
 
-    screen.blit(meteorite_sprite, (met_x, met_y))
+    meteorite.draw(screen)
 
     player_ship.inactivity_animation()
 
@@ -54,22 +62,19 @@ while running:
         player_ship.accelerator_animation(screen)
 
         # вектор движения корабля
-        speed_x, speed_y = player_ship.move_ship()
+        player_ship.move_ship()
 
         # ускорение
         if keys[pygame.K_LALT]:
             pass
 
     elif keys[pygame.K_SPACE]:
-        speed_x, speed_y = player_ship.deceleration_ship()
+        player_ship.deceleration_ship()
 
     # Рисуем корабль
     player_ship.rotate_animation(screen)
 
-    met_x -= speed_x
-    met_y += speed_y
-
-    text = f'x {stars_bg_x}, y {stars_bg_y} {config.HEIGHT}'
+    text = f'{camera_offset}'
     screen.blit(get_text_surface(text), (100, 100))
 
     # Держим цикл на правильной скорости
@@ -80,7 +85,11 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+    # Отрисовка объектов Pymunk
+    space_pymunk.debug_draw(draw_options)
     # после отрисовки всего, обновляем экран
+    space_pymunk.step(1 / 30.0)  # Шаг симуляции
+
     pygame.display.flip()
 
 pygame.quit()
