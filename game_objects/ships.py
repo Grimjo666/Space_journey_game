@@ -2,6 +2,7 @@ import math
 import pygame
 import pymunk
 
+import config
 from .space import SpaceObject
 
 
@@ -96,8 +97,9 @@ class BaseShip(SpaceObject):
             sprite = self.sprite
 
         sprite = pygame.transform.rotate(sprite, self.current_angle - 90)
-        player_rect = sprite.get_rect(center=self.body.position)
-        surface.blit(sprite, player_rect.topleft)
+        self.draw(surface, sprite)
+        # player_rect = sprite.get_rect(center=self.body.position)
+        # surface.blit(sprite, player_rect.topleft)
 
     def accelerator_animation(self, surface):
         self.motion_sprite_counter += 1
@@ -147,7 +149,7 @@ class Cruiser(BaseShip):
 
     def __init__(self, ship_position):
         super().__init__(ship_position)
-        self.radius = self.radius * 0.6
+        self.radius *= 0.6
 
         self.accelerator_sprites = [
             pygame.image.load(f'images/ship_sprites/ship_2/accelerators/main_{i}.png').convert_alpha()

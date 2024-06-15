@@ -1,7 +1,7 @@
-# Pygame шаблон - скелет для нового проекта Pygame
 import pygame
 import pymunk
 import pymunk.pygame_util
+import random
 
 import config
 from text import get_text_surface
@@ -18,8 +18,7 @@ clock = pygame.time.Clock()
 
 
 background = space.SpaceBG(screen)
-
-space_pymunk = pymunk.Space()
+physical_space = space.PhysicalSpace()
 
 draw_options = pymunk.pygame_util.DrawOptions(screen)
 
@@ -30,30 +29,39 @@ bg_sound.set_volume(config.BG_SOUND)
 bg_sound.play()
 
 
-player_position = screen.get_rect().center
-player_ship = ships.Cruiser(player_position)
+screen_center = screen.get_rect().center
+player_ship = ships.Cruiser(screen_center)
 
-meteorite = space.Meteorite((0, 500))
-meteorite_2 = space.Meteorite((1000, 0))
+x = []
 
-space_pymunk.add(meteorite.body, meteorite.get_circle_shape())
-space_pymunk.add(meteorite_2.body, meteorite_2.get_circle_shape())
-space_pymunk.add(player_ship.body, player_ship.get_circle_shape())
-meteorite.body.velocity = (200, 0)
+for i in range(10000):
+    random_met = space.Meteorite((random.randint(1, 2000), random.randint(1, 2000)))
+    x.append(random_met)
+    physical_space.add(random_met)
+
+physical_space.add(player_ship)
+
+
+def handle_zoom(event):
+    if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.button == 4 and config.ZOOM < 2:  # колесико вверх
+            config.ZOOM *= 1.1
+        elif event.button == 5 and config.ZOOM > 0.1:  # колесико вниз
+            config.ZOOM /= 1.1
+
 
 # Цикл игры
 running = True
 while running:
 
-    camera_offset = pymunk.Vec2d(player_position[0] - player_ship.body.position.x, player_position[1] - player_ship.body.position.y)
-    for body in space_pymunk.bodies:
-        body.position += camera_offset
+    camera_offset = pymunk.Vec2d(screen_center[0] - player_ship.body.position.x, screen_center[1] - player_ship.body.position.y) * config.ZOOM
+    physical_space.move_camera(camera_offset)
+    background.move_camera(camera_offset)
 
     keys = pygame.key.get_pressed()
 
-    background.draw_stars_bg(*camera_offset)
-
-    meteorite.draw(screen)
+    for i in x:
+        i.draw(screen)
 
     player_ship.inactivity_animation()
 
@@ -74,7 +82,7 @@ while running:
     # Рисуем корабль
     player_ship.rotate_animation(screen)
 
-    text = f'{camera_offset}'
+    text = f'{config.ZOOM}'
     screen.blit(get_text_surface(text), (100, 100))
 
     # Держим цикл на правильной скорости
@@ -85,10 +93,13 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+        handle_zoom(event)
+
     # Отрисовка объектов Pymunk
-    space_pymunk.debug_draw(draw_options)
+    # physical_space.space.debug_draw(draw_options)
     # после отрисовки всего, обновляем экран
-    space_pymunk.step(1 / 30.0)  # Шаг симуляции
+
+    physical_space.get_simulation_step()
 
     pygame.display.flip()
 
