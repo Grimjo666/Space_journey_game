@@ -28,12 +28,12 @@ class BaseShip(SpaceObject):
         m_x, m_y = pygame.mouse.get_pos()
         p_x, p_y = self.body.position
 
-        result_angle = math.atan2(p_y - m_y, m_x - p_x)
+        result_angle = math.atan2(m_y - p_y, m_x - p_x)
 
         if result_angle < 0:  # Если угол отрицательный, добавляем 2 * пи
             result_angle += 2 * math.pi
 
-        return -result_angle
+        return result_angle
 
     def get_movement_vector(self):
 
@@ -41,7 +41,7 @@ class BaseShip(SpaceObject):
         dx = round(self.MAX_SPEED * math.cos(self.body.angle), 3)
         dy = round(self.MAX_SPEED * math.sin(self.body.angle), 3)
 
-        self.move_vector = pymunk.Vec2d(dx, -dy)
+        self.move_vector = pymunk.Vec2d(dx, dy)
 
     def smooth_rotation(self):
         # Логика поворота с симуляцией массы корабля
@@ -108,7 +108,7 @@ class BaseShip(SpaceObject):
 
         # Если разница в углах больше, то вычисляем направление вращения
         if abs(difference) > math.radians(0.5):
-            if difference > 0:
+            if difference < 0:
                 self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self.rotate_left_sprites)
                 self._current_sprite = self.rotate_left_sprites[self.motion_sprite_counter]
             else:

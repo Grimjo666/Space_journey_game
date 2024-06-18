@@ -95,7 +95,7 @@ while running:
     met_3.draw(screen)
     met_4.draw(screen)
 
-    text = f'текущий ZOOM: {player_ship.body.angle * 180 / math.pi} | {player_ship.move_vector} {player_ship.body.velocity}'
+    text = f'текущий ZOOM: {int(player_ship.body.angle * 180 / math.pi)} | {player_ship.move_vector} {player_ship.body.velocity}'
     screen.blit(get_text_surface(text), (100, 100))
 
     # Держим цикл на правильной скорости
