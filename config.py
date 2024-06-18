@@ -4,4 +4,4 @@ FPS = 30
 
 BG_SOUND = 0
 
-ZOOM = 1.0
+ZOOM = 1
