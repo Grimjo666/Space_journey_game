@@ -67,10 +67,68 @@ class PhysicalSpace:
     def get_simulation_step(self):
         return self.space.step(1 / config.FPS)
 
+    @staticmethod
+    def get_collision_data(arbiter):
+        body_a, body_b = arbiter.shapes[0].body, arbiter.shapes[1].body
+        velocity_a = body_a.velocity
+        velocity_b = body_b.velocity
+        angular_velocity_a = body_a.angular_velocity
+        angular_velocity_b = body_b.angular_velocity
+        center_mass_a = body_a.position
+        center_mass_b = body_b.position
+        return velocity_a, velocity_b, angular_velocity_a, angular_velocity_b, center_mass_a, center_mass_b
+
+    @staticmethod
+    def calculate_relative_velocity(velocity_a, velocity_b, angular_velocity_a, angular_velocity_b, contact_point,
+                                    center_mass_a, center_mass_b):
+        ra = contact_point - center_mass_a
+        rb = contact_point - center_mass_b
+        velocity_a_contact = velocity_a + angular_velocity_a * ra.perpendicular()
+        velocity_b_contact = velocity_b + angular_velocity_b * rb.perpendicular()
+        relative_velocity = velocity_a_contact - velocity_b_contact
+        return relative_velocity
+
+    @staticmethod
+    def calculate_collision_force(relative_velocity, mass_a, mass_b):
+        # Расчёт силы столкновения
+        relative_speed = relative_velocity.length
+        combined_mass = mass_a * mass_b / (mass_a + mass_b)
+        collision_force = combined_mass * relative_speed
+        return collision_force
+
+    @staticmethod
+    def calculate_damage(collision_force):
+        # Простой пример расчета урона
+        damage = collision_force * 0.0002  # Коэффициент для регулирования урона
+        print(damage)
+        return damage
+
     def damage_handler(self, arbiter, space, data):
-        for shape in arbiter.shapes:
-            print(str(shape.object_data))
-            print(shape.object_data.body.velocity.length)
+        # Извлекаем данные о столкновении
+        (velocity_a, velocity_b, angular_velocity_a, angular_velocity_b, center_mass_a,
+         center_mass_b) = self.get_collision_data(arbiter)
+
+        # Берем первую точку контакта для простоты
+        contact_point = arbiter.contact_point_set.points[0].point_a
+
+        # Рассчитываем относительную скорость
+        relative_velocity = self.calculate_relative_velocity(velocity_a, velocity_b, angular_velocity_a, angular_velocity_b,
+                                                        contact_point, center_mass_a, center_mass_b)
+
+        # Получаем массы объектов
+        mass_a = arbiter.shapes[0].body.mass
+        mass_b = arbiter.shapes[1].body.mass
+
+        # Рассчитываем силу столкновения
+        collision_force = self.calculate_collision_force(relative_velocity, mass_a, mass_b)
+
+        # Рассчитываем урон
+        damage = self.calculate_damage(collision_force)
+
+        # Здесь вы можете обновить здоровье объектов или вызвать другие эффекты столкновения
+        arbiter.shapes[0].object_data.health -= damage
+        arbiter.shapes[1].object_data.health -= damage
+
         return True
 
 
@@ -116,7 +174,6 @@ class SpaceObject:
     """
     collision_type = 1 - Космический мусор
     """
-    MAX_SPEED = 0
     MASS = 1
     ELASTICITY = 0
     FRICTION = 0
@@ -128,10 +185,10 @@ class SpaceObject:
     def __init__(self, position, body_type='circle'):
         self.health = self.HEALTH
 
-        self.sprite = pygame.image.load(self.SPRITE_PATH).convert_alpha()
-        self._current_sprite = self.sprite
+        self._sprite = pygame.image.load(self.SPRITE_PATH).convert_alpha()
+        self._current_sprite = self._sprite
 
-        self.original_radius = self.sprite.get_rect().width // 2
+        self.original_radius = self._sprite.get_rect().width // 2
         self.radius = self.original_radius
 
         self.original_mass = self.MASS
@@ -141,25 +198,25 @@ class SpaceObject:
             self.body = pymunk.Body(self.mass, pymunk.moment_for_circle(self.mass, 0, self.radius))
             self.body.type = 'circle'
         elif body_type == 'box':
-            self.body = pymunk.Body(self.mass, pymunk.moment_for_box(self.mass, self.sprite.get_size()))
+            self.body = pymunk.Body(self.mass, pymunk.moment_for_box(self.mass, self._sprite.get_size()))
             self.body.type = 'box'
         self.body.position = position
 
-    def change_scale(self):
-        # Обновляем положение тела
-        self.body.position = pymunk.Vec2d(self.body.position.x * config.ZOOM, self.body.position.y * config.ZOOM)
-
-        # Обновляем радиус и массу
-        self.radius = self.original_radius * config.ZOOM
-        self.mass = self.original_mass * config.ZOOM
-
-        # Обновляем момент инерции тела
-        self.body.moment = pymunk.moment_for_circle(self.mass, 0, self.radius)
-
-        # Обновляем спрайт
-        rect = self.sprite.get_rect()
-        self.current_sprite = pygame.transform.scale(self.sprite,
-                                                     (int(rect.width * config.ZOOM), int(rect.height * config.ZOOM)))
+    # def change_scale(self):
+    #     # Обновляем положение тела
+    #     self.body.position = pymunk.Vec2d(self.body.position.x * config.ZOOM, self.body.position.y * config.ZOOM)
+    #
+    #     # Обновляем радиус и массу
+    #     self.radius = self.original_radius * config.ZOOM
+    #     self.mass = self.original_mass * config.ZOOM
+    #
+    #     # Обновляем момент инерции тела
+    #     self.body.moment = pymunk.moment_for_circle(self.mass, 0, self.radius)
+    #
+    #     # Обновляем спрайт
+    #     rect = self.sprite.get_rect()
+    #     self.current_sprite = pygame.transform.scale(self.sprite,
+    #                                                  (int(rect.width * config.ZOOM), int(rect.height * config.ZOOM)))
 
     def get_circle_shape(self):
         circle_shape = pymunk.Circle(self.body, self.radius)
@@ -170,7 +227,7 @@ class SpaceObject:
         return circle_shape
 
     def get_box_shape(self):
-        box_shape = pymunk.Poly.create_box(self.body, self.sprite.get_size())
+        box_shape = pymunk.Poly.create_box(self.body, self._sprite.get_size())
         box_shape.elasticity = self.ELASTICITY
         box_shape.collision_type = 1
         box_shape.object_data = self
@@ -182,24 +239,13 @@ class SpaceObject:
         elif self.body.type == 'box':
             return self.get_box_shape()
 
-    def draw(self, surface, sprite=None):
-        if sprite is None:
-            sprite = self._current_sprite
-
+    def draw(self, surface):
+        sprite = self.rotate_sprite()
         rect = sprite.get_rect(center=self.body.position)
         surface.blit(sprite, rect.topleft)
 
     def rotate_sprite(self):
-        self._current_sprite = pygame.transform.rotate(self._current_sprite, -math.degrees(self.body.angle) - 90)
-
-    @property
-    def current_sprite(self):
-        self.rotate_sprite()
-        return self._current_sprite
-
-    @current_sprite.setter
-    def current_sprite(self, value):
-        self._current_sprite = value
+        return pygame.transform.rotate(self._sprite, -math.degrees(self.body.angle))
 
 
 class Meteorite(SpaceObject):

@@ -17,9 +17,9 @@ class BaseShip(SpaceObject):
         super().__init__(ship_position, body_type)
         self._current_sprite = None
 
-        self.accelerator_sprites = None
-        self.rotate_left_sprites = None
-        self.rotate_right_sprites = None
+        self._accelerator_sprites = None
+        self._rotate_left_sprites = None
+        self._rotate_right_sprites = None
         self.motion_sprite_counter = -1
 
         self.move_vector = pymunk.Vec2d(0, 0)
@@ -38,14 +38,20 @@ class BaseShip(SpaceObject):
     def get_movement_vector(self):
 
         # Вычисление изменений по осям x и y
-        dx = round(self.MAX_SPEED * math.cos(self.body.angle), 3)
-        dy = round(self.MAX_SPEED * math.sin(self.body.angle), 3)
+        dx = self.MAX_SPEED * math.cos(self.body.angle)
+        dy = self.MAX_SPEED * math.sin(self.body.angle)
 
         self.move_vector = pymunk.Vec2d(dx, dy)
 
     def smooth_rotation(self):
         # Логика поворота с симуляцией массы корабля
-        difference = self.calculate_angle() - self.body.angle
+        target_angle = self.calculate_angle()
+        current_angle = self.body.angle
+        difference = target_angle - current_angle
+
+        if abs(difference) <= 0.01:
+            difference = 0
+
         if difference > math.pi:
             difference -= 2 * math.pi
         elif difference < -math.pi:
@@ -54,15 +60,23 @@ class BaseShip(SpaceObject):
         # Замедление в конце поворота
         if abs(difference) < self.ROTATE_SLOWDOWN_THRESHOLD:
             rotate_speed = max(self.MIN_ROTATE_SPEED,
-                               self.ROTATE_SPEED * abs(difference) / self.ROTATE_SLOWDOWN_THRESHOLD)
+                               self.ROTATE_SPEED * abs(difference) // self.ROTATE_SLOWDOWN_THRESHOLD)
         else:
             rotate_speed = self.ROTATE_SPEED
 
+        # Применение угловой скорости
         if difference != 0:
-            if abs(difference) < rotate_speed:
-                self.body.angle += difference
-            else:
-                self.body.angle += math.copysign(rotate_speed, difference)
+            target_angular_velocity = math.copysign(rotate_speed, difference)
+
+            # Ограничиваем угловую скорость
+            max_angular_velocity = rotate_speed
+            self.body.angular_velocity = max(min(target_angular_velocity, max_angular_velocity), -max_angular_velocity)
+
+        else:
+            self.body.angular_velocity = 0
+
+        # Применяем угловую скорость к текущему углу
+        self.body.angle += self.body.angular_velocity
 
         # Убедитесь, что угол остается в диапазоне от 0 до 2*pi
         self.body.angle %= 2 * math.pi
@@ -73,7 +87,7 @@ class BaseShip(SpaceObject):
         self.get_movement_vector()
 
         impulse = self.move_vector * self.ENGINE_POWER
-        self.body.apply_impulse_at_local_point(impulse)
+        self.body.apply_impulse_at_world_point(impulse, (0, 0))
         self.limit_velocity()
 
     def deceleration_ship(self):
@@ -87,14 +101,19 @@ class BaseShip(SpaceObject):
             self.body.velocity = self.body.velocity.normalized() * self.MAX_SPEED
 
     def rotate_sprite(self):
-        self._current_sprite = pygame.transform.rotate(self._current_sprite, -math.degrees(self.body.angle) - 90)
+        return pygame.transform.rotate(self._current_sprite, -math.degrees(self.body.angle) - 90)
+
+    def draw(self, surface):
+        sprite = self.rotate_sprite()
+        rect = sprite.get_rect(center=self.body.position)
+        surface.blit(sprite, rect.topleft)
 
     def accelerator_animation(self):
         self.motion_sprite_counter += 1
         if self.motion_sprite_counter == 4:
             self.motion_sprite_counter = 0
 
-        self._current_sprite = self.accelerator_sprites[self.motion_sprite_counter]
+        self._current_sprite = self._accelerator_sprites[self.motion_sprite_counter]
 
     def rotate_animation(self):
         # Активируем вращение корабля
@@ -109,25 +128,16 @@ class BaseShip(SpaceObject):
         # Если разница в углах больше, то вычисляем направление вращения
         if abs(difference) > math.radians(0.5):
             if difference < 0:
-                self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self.rotate_left_sprites)
-                self._current_sprite = self.rotate_left_sprites[self.motion_sprite_counter]
+                self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self._rotate_left_sprites)
+                self._current_sprite = self._rotate_left_sprites[self.motion_sprite_counter]
             else:
-                self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self.rotate_right_sprites)
-                self._current_sprite = self.rotate_right_sprites[self.motion_sprite_counter]
+                self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self._rotate_right_sprites)
+                self._current_sprite = self._rotate_right_sprites[self.motion_sprite_counter]
         else:
-            self._current_sprite = self.sprite
+            self._current_sprite = self._sprite
 
     def inactivity_animation(self):
-        self._current_sprite = self.sprite
-
-    @property
-    def current_sprite(self):
-        self.rotate_sprite()
-        return self._current_sprite
-
-    @current_sprite.setter
-    def current_sprite(self, value):
-        self._current_sprite = value
+        self._current_sprite = self._sprite
 
 
 class Cruiser(BaseShip):
@@ -141,22 +151,22 @@ class Cruiser(BaseShip):
     HEALTH = 300
 
     ROTATE_SPEED = math.radians(3)
-    ROTATE_SLOWDOWN_THRESHOLD = math.radians(60)
+    ROTATE_SLOWDOWN_THRESHOLD = math.radians(30)
     MIN_ROTATE_SPEED = math.radians(1)
 
     def __init__(self, ship_position, body_type='circle'):
         super().__init__(ship_position, body_type)
         self.radius *= 0.6
 
-        self.accelerator_sprites = [
+        self._accelerator_sprites = [
             pygame.image.load(f'images/ship_sprites/ship_2/accelerators/main_{i}.png').convert_alpha()
             for i in range(1, 5)
         ]
-        self.rotate_left_sprites = [
+        self._rotate_left_sprites = [
             pygame.image.load(f'images/ship_sprites/ship_2/accelerators/rotate_left_{i}.png').convert_alpha()
             for i in range(1, 5)
         ]
-        self.rotate_right_sprites = [
+        self._rotate_right_sprites = [
             pygame.image.load(f'images/ship_sprites/ship_2/accelerators/rotate_right_{i}.png').convert_alpha()
             for i in range(1, 5)
         ]

@@ -1,8 +1,6 @@
 import pygame
 import pymunk
 import pymunk.pygame_util
-import random
-import math
 
 import config
 from text import get_text_surface
@@ -11,7 +9,10 @@ from engine import ships, space
 # Создаем игру и окно
 pygame.init()
 pygame.mixer.init()
+
+# Создаем окно с текущим разрешением
 screen = pygame.display.set_mode((config.WIDTH, config.HEIGHT))
+
 pygame.display.set_caption("Space snake")
 icon = pygame.image.load('images/snake_icon.png').convert_alpha()
 pygame.display.set_icon(icon)
@@ -31,11 +32,12 @@ bg_sound.set_volume(config.BG_SOUND)
 bg_sound.play()
 
 
-screen_center = screen.get_rect().center
+screen_center = config.WIDTH // 2, config.HEIGHT // 2
 player_ship = ships.Cruiser(screen_center)
 
-met_1 = space.Meteorite((0, 0))
-met_2 = space.Meteorite((config.WIDTH, 0))
+met_1 = space.Meteorite((0, 100))
+# met_1.body.velocity = pymunk.Vec2d(100, 0)
+met_2 = space.Meteorite((200, 100))
 met_3 = space.Meteorite((config.WIDTH, config.HEIGHT))
 met_4 = space.Meteorite((0, config.HEIGHT))
 
@@ -52,11 +54,6 @@ def handle_zoom(event):
             config.ZOOM *= 1.1
         elif event.button == 5 and config.ZOOM > 0.55:  # колесико вниз
             config.ZOOM /= 1.1
-        # met_1.change_scale()
-        # met_2.change_scale()
-        # met_3.change_scale()
-        # met_4.change_scale()
-        # player_ship.change_scale()
 
 
 # Цикл игры
@@ -64,7 +61,7 @@ running = True
 while running:
 
     camera_offset = pymunk.Vec2d(screen_center[0] - player_ship.body.position.x,
-                                 screen_center[1] - player_ship.body.position.y) * config.ZOOM
+                                 screen_center[1] - player_ship.body.position.y)
     physical_space.move_camera(camera_offset)
     background.move_camera(camera_offset)
 
@@ -75,9 +72,8 @@ while running:
     # движение по нажатию на кнопку W
     if keys[pygame.K_w] and not keys[pygame.K_SPACE]:
         player_ship.accelerator_animation()
-        player_ship.draw(screen, player_ship.current_sprite)
-        # вектор движения корабля
         player_ship.move_ship()
+        player_ship.draw(screen)
 
         # ускорение
         if keys[pygame.K_LALT]:
@@ -88,14 +84,14 @@ while running:
 
     # Рисуем корабль
     player_ship.rotate_animation()
-    player_ship.draw(screen, player_ship.current_sprite)
+    player_ship.draw(screen)
 
     met_1.draw(screen)
     met_2.draw(screen)
     met_3.draw(screen)
     met_4.draw(screen)
 
-    text = f'текущий ZOOM: {int(player_ship.body.angle * 180 / math.pi)} | {player_ship.move_vector} {player_ship.body.velocity}'
+    text = f'{player_ship.health, met_1.health}'
     screen.blit(get_text_surface(text), (100, 100))
 
     # Держим цикл на правильной скорости
@@ -106,10 +102,8 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-        handle_zoom(event)
-
     # Отрисовка объектов Pymunk
-    physical_space.space.debug_draw(draw_options)
+    # physical_space.space.debug_draw(draw_options)
     # после отрисовки всего, обновляем экран
 
     physical_space.get_simulation_step()
