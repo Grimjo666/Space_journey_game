@@ -4,6 +4,7 @@ import pygame
 import pymunk
 
 import config
+from engine import events
 
 
 class Utils:
@@ -58,7 +59,7 @@ class PhysicalSpace:
         self.space.add(obj.body, obj.get_shape())
 
     def remove(self, objs):
-        self.space.remove(objs)
+        self.space.remove(objs.body, objs.shape)
 
     def move_camera(self, camera_offset):
         for body in self.space.bodies:
@@ -99,8 +100,7 @@ class PhysicalSpace:
     @staticmethod
     def calculate_damage(collision_force):
         # Простой пример расчета урона
-        damage = collision_force * 0.0002  # Коэффициент для регулирования урона
-        print(damage)
+        damage = collision_force * config.DAMAGE  # Коэффициент для регулирования урона
         return damage
 
     def damage_handler(self, arbiter, space, data):
@@ -112,8 +112,9 @@ class PhysicalSpace:
         contact_point = arbiter.contact_point_set.points[0].point_a
 
         # Рассчитываем относительную скорость
-        relative_velocity = self.calculate_relative_velocity(velocity_a, velocity_b, angular_velocity_a, angular_velocity_b,
-                                                        contact_point, center_mass_a, center_mass_b)
+        relative_velocity = self.calculate_relative_velocity(velocity_a, velocity_b, angular_velocity_a,
+                                                             angular_velocity_b,
+                                                             contact_point, center_mass_a, center_mass_b)
 
         # Получаем массы объектов
         mass_a = arbiter.shapes[0].body.mass
@@ -126,8 +127,8 @@ class PhysicalSpace:
         damage = self.calculate_damage(collision_force)
 
         # Здесь вы можете обновить здоровье объектов или вызвать другие эффекты столкновения
-        arbiter.shapes[0].object_data.health -= damage
-        arbiter.shapes[1].object_data.health -= damage
+        arbiter.shapes[0].object_data.take_damage(damage)
+        arbiter.shapes[1].object_data.take_damage(damage)
 
         return True
 
@@ -202,6 +203,8 @@ class SpaceObject:
             self.body.type = 'box'
         self.body.position = position
 
+        self.shape = None
+
     # def change_scale(self):
     #     # Обновляем положение тела
     #     self.body.position = pymunk.Vec2d(self.body.position.x * config.ZOOM, self.body.position.y * config.ZOOM)
@@ -235,9 +238,10 @@ class SpaceObject:
 
     def get_shape(self):
         if self.body.type == 'circle':
-            return self.get_circle_shape()
+            self.shape = self.get_circle_shape()
         elif self.body.type == 'box':
-            return self.get_box_shape()
+            self.shape = self.get_box_shape()
+        return self.shape
 
     def draw(self, surface):
         sprite = self.rotate_sprite()
@@ -246,6 +250,12 @@ class SpaceObject:
 
     def rotate_sprite(self):
         return pygame.transform.rotate(self._sprite, -math.degrees(self.body.angle))
+
+    def take_damage(self, damage):
+        self.health -= damage
+        if self.health <= 0:
+            object_destruction_event = pygame.event.Event(events.OBJECT_DESTRUCTION_EVENT, object=self)
+            pygame.event.post(object_destruction_event)
 
 
 class Meteorite(SpaceObject):

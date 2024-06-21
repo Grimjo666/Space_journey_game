@@ -4,7 +4,7 @@ import pymunk.pygame_util
 
 import config
 from text import get_text_surface
-from engine import ships, space
+from engine import ships, space, events
 
 # Создаем игру и окно
 pygame.init()
@@ -35,17 +35,15 @@ bg_sound.play()
 screen_center = config.WIDTH // 2, config.HEIGHT // 2
 player_ship = ships.Cruiser(screen_center)
 
-met_1 = space.Meteorite((0, 100))
-# met_1.body.velocity = pymunk.Vec2d(100, 0)
-met_2 = space.Meteorite((200, 100))
-met_3 = space.Meteorite((config.WIDTH, config.HEIGHT))
-met_4 = space.Meteorite((0, config.HEIGHT))
+space_objects = [
+    space.Meteorite((0, 100)),
+    space.Meteorite((200, 100)),
+    space.Meteorite((config.WIDTH, config.HEIGHT))
+]
 
 physical_space.add(player_ship)
-physical_space.add(met_1)
-physical_space.add(met_2)
-physical_space.add(met_3)
-physical_space.add(met_4)
+for obj in space_objects:
+    physical_space.add(obj)
 
 
 def handle_zoom(event):
@@ -86,12 +84,10 @@ while running:
     player_ship.rotate_animation()
     player_ship.draw(screen)
 
-    met_1.draw(screen)
-    met_2.draw(screen)
-    met_3.draw(screen)
-    met_4.draw(screen)
+    for obj in space_objects:
+        obj.draw(screen)
 
-    text = f'{player_ship.health, met_1.health}'
+    text = f'{player_ship.health}'
     screen.blit(get_text_surface(text), (100, 100))
 
     # Держим цикл на правильной скорости
@@ -101,6 +97,12 @@ while running:
         # check for closing window
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == events.GAME_OVER_EVENT:
+            print('sssssssssss')
+        elif event.type == events.OBJECT_DESTRUCTION_EVENT:
+            if event.object in space_objects:
+                physical_space.remove(event.object)
+                space_objects.remove(event.object)
 
     # Отрисовка объектов Pymunk
     # physical_space.space.debug_draw(draw_options)
