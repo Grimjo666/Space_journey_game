@@ -1,10 +1,8 @@
 import pygame
-import pymunk
-import pymunk.pygame_util
 
 import config
 from text import get_text_surface
-from engine import ships, space, events
+
 
 # Создаем игру и окно
 pygame.init()

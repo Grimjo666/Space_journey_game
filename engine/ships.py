@@ -146,7 +146,7 @@ class Cruiser(BaseShip):
     ENGINE_POWER = 15
     ELASTICITY = 0.3
     FRICTION = 0.5
-    SPRITE_PATH = 'images/ship_sprites/ship_2/ship_2.png'
+    SPRITE_PATH = '../images/space/ship_sprites/ship_2/ship_2.png'
 
     HEALTH = 300
 
@@ -159,14 +159,14 @@ class Cruiser(BaseShip):
         self.radius *= 0.6
 
         self._accelerator_sprites = [
-            pygame.image.load(f'images/ship_sprites/ship_2/accelerators/main_{i}.png').convert_alpha()
+            pygame.image.load(f'../images/space/ship_sprites/ship_2/accelerators/main_{i}.png').convert_alpha()
             for i in range(1, 5)
         ]
         self._rotate_left_sprites = [
-            pygame.image.load(f'images/ship_sprites/ship_2/accelerators/rotate_left_{i}.png').convert_alpha()
+            pygame.image.load(f'../images/space/ship_sprites/ship_2/accelerators/rotate_left_{i}.png').convert_alpha()
             for i in range(1, 5)
         ]
         self._rotate_right_sprites = [
-            pygame.image.load(f'images/ship_sprites/ship_2/accelerators/rotate_right_{i}.png').convert_alpha()
+            pygame.image.load(f'../images/space/ship_sprites/ship_2/accelerators/rotate_right_{i}.png').convert_alpha()
             for i in range(1, 5)
         ]

@@ -3,11 +3,11 @@ import pymunk
 import pymunk.pygame_util
 
 import config
-from text import get_text_surface
-from engine import ships, space, events
+from engine import ships, space, events, menu
+from pause_menu import PauseMenuScene
 
 
-class SpaceLoop:
+class SpaceScene:
     def __init__(self, screen):
         self.screen = screen
         self.clock = pygame.time.Clock()
@@ -18,11 +18,13 @@ class SpaceLoop:
         self.draw_options = pymunk.pygame_util.DrawOptions(screen)
 
         # звуки
-        self.bg_sound = pygame.mixer.Sound('sounds/bg_sound.mp3')
+        self.bg_sound = pygame.mixer.Sound('../sounds/bg_sound.mp3')
         self.bg_sound.set_volume(config.BG_SOUND)
         self.bg_sound.play()
 
         self.screen_center = config.WIDTH // 2, config.HEIGHT // 2
+
+        self.pause_menu = PauseMenuScene(screen)
 
     @staticmethod
     def handle_zoom(event):
@@ -32,7 +34,7 @@ class SpaceLoop:
             elif event.button == 5 and config.ZOOM > 0.55:  # колесико вниз
                 config.ZOOM /= 1.1
 
-    def get_loop(self):
+    def start(self):
 
         player_ship = ships.Cruiser(self.screen_center)
 
@@ -79,7 +81,7 @@ class SpaceLoop:
                 obj.draw(self.screen)
 
             text = f'{player_ship.health}'
-            self.screen.blit(get_text_surface(text), (100, 100))
+            # self.screen.blit(get_text_surface(text), (100, 100))
 
             # Держим цикл на правильной скорости
             self.clock.tick(config.FPS)
@@ -88,12 +90,17 @@ class SpaceLoop:
                 # check for closing window
                 if event.type == pygame.QUIT:
                     self.running = False
-                elif event.type == events.GAME_OVER_EVENT:
+                elif event.type == events.GAME_OVER:
                     self.running = False
-                elif event.type == events.OBJECT_DESTRUCTION_EVENT:
+                elif event.type == events.OBJECT_DESTRUCTION:
                     if event.object in space_objects:
                         self.physical_space.remove(event.object)
                         space_objects.remove(event.object)
+
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        self.pause_menu.start()
+
 
             # Отрисовка объектов Pymunk
             # physical_space.space.debug_draw(draw_options)
