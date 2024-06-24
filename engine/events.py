@@ -6,6 +6,7 @@ OBJECT_DESTRUCTION = pygame.USEREVENT + 2
 
 # main_menu events
 NEW_GAME = pygame.USEREVENT + 11
+EXIT_GAME = pygame.USEREVENT + 12
 
 
 # pause_menu events

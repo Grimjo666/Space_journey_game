@@ -70,7 +70,7 @@ class Button(MarginMixin):
 
 
 class BaseMenu(MarginMixin):
-    FONT_PATH = '../fonts/Marske.ttf'
+    FONT_PATH = 'fonts/Marske.ttf'
     BUTTON_NAMES = ()
     SIZE = 65
 
@@ -106,6 +106,7 @@ class BaseMenu(MarginMixin):
 
             if button.rect and self.check_hover(button, mouse):
                 button = button.get_change_button(self.HOVER_COLOR)
+
                 if pygame.mouse.get_pressed()[0]:
                     new_game_event = pygame.event.Event(button.event)
                     pygame.event.post(new_game_event)

@@ -1,36 +1,47 @@
 import pygame
 
 import config
-from text import get_text_surface
+from engine import events
+from scenes.main_menu import MainMenuScene
+from scenes.pause_menu import PauseMenuScene
+from scenes.space import SpaceScene
 
 
-# Создаем игру и окно
-pygame.init()
-pygame.mixer.init()
+def main():
+    # Создаем игру и окно
+    pygame.init()
+    pygame.mixer.init()
 
-# Создаем окно с текущим разрешением
-screen = pygame.display.set_mode((config.WIDTH, config.HEIGHT))
+    screen = pygame.display.set_mode((config.WIDTH, config.HEIGHT))
+    clock = pygame.time.Clock()
 
-pygame.display.set_caption("Space snake")
-icon = pygame.image.load('images/snake_icon.png').convert_alpha()
-pygame.display.set_icon(icon)
-clock = pygame.time.Clock()
+    pygame.display.set_caption("Space snake")
+    icon = pygame.image.load('images/snake_icon.png').convert_alpha()
+    pygame.display.set_icon(icon)
 
-# Цикл игры
-running = True
-while running:
+    main_menu_scene = MainMenuScene(screen, clock)
+    pause_menu_scene = PauseMenuScene(screen, clock)
+    space_scene = SpaceScene(screen, clock)
 
-    text = f'some'
-    screen.blit(get_text_surface(text), (100, 100))
+    current_scene = main_menu_scene
+    current_scene.start()
 
-    # Держим цикл на правильной скорости
-    clock.tick(config.FPS)
-    # Ввод процесса (события)
-    for event in pygame.event.get():
-        # check for closing window
-        if event.type == pygame.QUIT:
-            running = False
+    running = True
+    while running:
 
-    pygame.display.flip()
+        current_scene.scene()
 
-pygame.quit()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                current_scene.stop()
+                running = False
+
+            elif event.type == events.NEW_GAME:
+                current_scene = space_scene
+                current_scene.start()
+
+    pygame.quit()
+
+
+if __name__ == "__main__":
+    main()

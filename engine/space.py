@@ -139,7 +139,7 @@ class SpaceBG:
         self.bg_color = pygame.Surface((config.WIDTH, config.HEIGHT))
         self.bg_color.fill((33, 9, 74))
         self.stars_bg_x = self.stars_bg_y = 0
-        self.stars_bg = pygame.image.load('../images/space/background/stars.png').convert_alpha()
+        self.stars_bg = pygame.image.load('images/space/background/stars.png').convert_alpha()
 
     def move_camera(self, camera_offset):
         x, y = camera_offset
@@ -262,6 +262,6 @@ class Meteorite(SpaceObject):
     MASS = 1000
     ELASTICITY = 0.5
     FRICTION = 1
-    SPRITE_PATH = '../images/space/space_objects/meteorites/meteorite_1.png'
+    SPRITE_PATH = 'images/space/space_objects/meteorites/meteorite_1.png'
 
     HEALTH = 100

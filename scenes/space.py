@@ -1,30 +1,41 @@
 import pygame
 import pymunk
 import pymunk.pygame_util
+import random
 
 import config
-from engine import ships, space, events, menu
-from pause_menu import PauseMenuScene
+from engine import ships, space, events, menu, scene
+from scenes.pause_menu import PauseMenuScene
 
 
-class SpaceScene:
-    def __init__(self, screen):
-        self.screen = screen
-        self.clock = pygame.time.Clock()
-        self.running = True
+class SpaceScene(scene.BaseScene):
+    def __init__(self, screen, clok):
+        super().__init__(screen, clok)
 
         self.background = space.SpaceBG(screen)
         self.physical_space = space.PhysicalSpace()
         self.draw_options = pymunk.pygame_util.DrawOptions(screen)
 
         # звуки
-        self.bg_sound = pygame.mixer.Sound('../sounds/bg_sound.mp3')
+        self.bg_sound = pygame.mixer.Sound('sounds/bg_sound.mp3')
         self.bg_sound.set_volume(config.BG_SOUND)
         self.bg_sound.play()
 
         self.screen_center = config.WIDTH // 2, config.HEIGHT // 2
 
-        self.pause_menu = PauseMenuScene(screen)
+        self.pause_menu_scene = PauseMenuScene(screen, clok)
+
+        self.player_ship = ships.Cruiser(self.screen_center)
+
+        self.space_objects = [
+            space.Meteorite((0, 100)),
+            space.Meteorite((200, 100)),
+            space.Meteorite((config.WIDTH, config.HEIGHT))
+        ]
+
+        self.physical_space.add(self.player_ship)
+        for obj in self.space_objects:
+            self.physical_space.add(obj)
 
     @staticmethod
     def handle_zoom(event):
@@ -34,79 +45,56 @@ class SpaceScene:
             elif event.button == 5 and config.ZOOM > 0.55:  # колесико вниз
                 config.ZOOM /= 1.1
 
-    def start(self):
+    def handle_event(self, event):
+        if event.type == events.GAME_OVER:
+            self.stop()
 
-        player_ship = ships.Cruiser(self.screen_center)
+        elif event.type == events.OBJECT_DESTRUCTION:
+            if event.object in self.space_objects:
+                self.physical_space.remove(event.object)
+                self.space_objects.remove(event.object)
 
-        space_objects = [
-            space.Meteorite((0, 100)),
-            space.Meteorite((200, 100)),
-            space.Meteorite((config.WIDTH, config.HEIGHT))
-        ]
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self.pause_menu_scene.start()
+                self.pause_menu_scene.scene()
 
-        self.physical_space.add(player_ship)
-        for obj in space_objects:
-            self.physical_space.add(obj)
+    def update(self):
+        pass
 
-        # Цикл игры
-        while self.running:
+    def draw(self):
+        camera_offset = pymunk.Vec2d(self.screen_center[0] - self.player_ship.body.position.x,
+                                     self.screen_center[1] - self.player_ship.body.position.y)
+        self.physical_space.move_camera(camera_offset)
+        self.background.move_camera(camera_offset)
 
-            camera_offset = pymunk.Vec2d(self.screen_center[0] - player_ship.body.position.x,
-                                         self.screen_center[1] - player_ship.body.position.y)
-            self.physical_space.move_camera(camera_offset)
-            self.background.move_camera(camera_offset)
+        keys = pygame.key.get_pressed()
 
-            keys = pygame.key.get_pressed()
+        self.player_ship.inactivity_animation()
 
-            player_ship.inactivity_animation()
+        # движение по нажатию на кнопку W
+        if keys[pygame.K_w] and not keys[pygame.K_SPACE]:
+            self.player_ship.accelerator_animation()
+            self.player_ship.move_ship()
+            self.player_ship.draw(self.screen)
 
-            # движение по нажатию на кнопку W
-            if keys[pygame.K_w] and not keys[pygame.K_SPACE]:
-                player_ship.accelerator_animation()
-                player_ship.move_ship()
-                player_ship.draw(self.screen)
+            # ускорение
+            if keys[pygame.K_LALT]:
+                pass
 
-                # ускорение
-                if keys[pygame.K_LALT]:
-                    pass
+        elif keys[pygame.K_SPACE]:
+            self.player_ship.deceleration_ship()
 
-            elif keys[pygame.K_SPACE]:
-                player_ship.deceleration_ship()
+        # Рисуем корабль
+        self.player_ship.rotate_animation()
+        self.player_ship.draw(self.screen)
 
-            # Рисуем корабль
-            player_ship.rotate_animation()
-            player_ship.draw(self.screen)
+        for obj in self.space_objects:
+            obj.draw(self.screen)
 
-            for obj in space_objects:
-                obj.draw(self.screen)
+        # Отрисовка объектов Pymunk
+        # self.physical_space.space.debug_draw(self.draw_options)
+        # после отрисовки всего, обновляем экран
 
-            text = f'{player_ship.health}'
-            # self.screen.blit(get_text_surface(text), (100, 100))
-
-            # Держим цикл на правильной скорости
-            self.clock.tick(config.FPS)
-            # Ввод процесса (события)
-            for event in pygame.event.get():
-                # check for closing window
-                if event.type == pygame.QUIT:
-                    self.running = False
-                elif event.type == events.GAME_OVER:
-                    self.running = False
-                elif event.type == events.OBJECT_DESTRUCTION:
-                    if event.object in space_objects:
-                        self.physical_space.remove(event.object)
-                        space_objects.remove(event.object)
-
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        self.pause_menu.start()
-
-
-            # Отрисовка объектов Pymunk
-            # physical_space.space.debug_draw(draw_options)
-            # после отрисовки всего, обновляем экран
-
-            self.physical_space.get_simulation_step()
-            pygame.display.flip()
-
-        pygame.quit()
+        self.physical_space.get_simulation_step()
+        pygame.display.flip()
