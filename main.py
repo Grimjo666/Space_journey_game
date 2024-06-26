@@ -5,6 +5,7 @@ from engine import events
 from scenes.main_menu import MainMenuScene
 from scenes.pause_menu import PauseMenuScene
 from scenes.space import SpaceScene
+from engine.scene import SceneManager
 
 
 def main():
@@ -19,27 +20,37 @@ def main():
     icon = pygame.image.load('images/snake_icon.png').convert_alpha()
     pygame.display.set_icon(icon)
 
-    main_menu_scene = MainMenuScene(screen, clock)
-    pause_menu_scene = PauseMenuScene(screen, clock)
-    space_scene = SpaceScene(screen, clock)
-
-    current_scene = main_menu_scene
-    current_scene.start()
+    scene_manager = SceneManager()
+    scene_manager.add_scene('main_menu_scene', MainMenuScene(screen))
+    scene_manager.add_scene('space_scene', SpaceScene(screen), active=False)
+    scene_manager.add_scene('pause_menu_scene', PauseMenuScene(screen), active=False)
 
     running = True
     while running:
 
-        current_scene.scene()
+        scene_manager.draw_scenes()
 
         for event in pygame.event.get():
+            scene_manager.handle_events(event)
+
             if event.type == pygame.QUIT:
-                current_scene.stop()
+                scene_manager.stop_all()
                 running = False
 
             elif event.type == events.NEW_GAME:
-                current_scene = space_scene
-                current_scene.start()
+                scene_manager.get_scene('main_menu_scene').stop()
+                scene_manager.get_scene('space_scene').start()
 
+            elif event.type == events.OPEN_PAUSE_MENU:
+                # scene_manager.get_scene('space_scene').stop()
+                scene_manager.get_scene('pause_menu_scene').start()
+
+            elif event.type == events.CLOSE_PAUSE_MENU:
+                scene_manager.get_scene('pause_menu_scene').stop()
+                scene_manager.get_scene('space_scene').start()
+
+        pygame.display.flip()
+        clock.tick(config.FPS)
     pygame.quit()
 
 

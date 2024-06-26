@@ -9,8 +9,8 @@ from scenes.pause_menu import PauseMenuScene
 
 
 class SpaceScene(scene.BaseScene):
-    def __init__(self, screen, clok):
-        super().__init__(screen, clok)
+    def __init__(self, screen):
+        super().__init__(screen)
 
         self.background = space.SpaceBG(screen)
         self.physical_space = space.PhysicalSpace()
@@ -22,8 +22,6 @@ class SpaceScene(scene.BaseScene):
         self.bg_sound.play()
 
         self.screen_center = config.WIDTH // 2, config.HEIGHT // 2
-
-        self.pause_menu_scene = PauseMenuScene(screen, clok)
 
         self.player_ship = ships.Cruiser(self.screen_center)
 
@@ -56,8 +54,7 @@ class SpaceScene(scene.BaseScene):
 
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                self.pause_menu_scene.start()
-                self.pause_menu_scene.scene()
+                self.trigger_event(events.OPEN_PAUSE_MENU)
 
     def update(self):
         pass
@@ -97,4 +94,3 @@ class SpaceScene(scene.BaseScene):
         # после отрисовки всего, обновляем экран
 
         self.physical_space.get_simulation_step()
-        pygame.display.flip()

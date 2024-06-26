@@ -1,4 +1,5 @@
 import pygame
+
 import config
 from engine import events
 
@@ -87,10 +88,11 @@ class BaseMenu(MarginMixin):
 
         self.len_menu = len(self.menu_buttons)
 
-    def draw(self, surface, surface_rect=None):
-        if not surface_rect:
-            surface_rect = surface.get_rect()
+        self.background_surface = None
+        self.background_rect = None
+        self.set_bg()
 
+    def draw(self):
         mouse = pygame.mouse.get_pos()
         counter = 0
         for button in self.menu_buttons:
@@ -111,14 +113,19 @@ class BaseMenu(MarginMixin):
                     new_game_event = pygame.event.Event(button.event)
                     pygame.event.post(new_game_event)
 
-            button.rect = button.btn_surface.get_rect(topleft=(surface_rect.left + x, surface_rect.top + y))
+            button.rect = button.btn_surface.get_rect(topleft=(self.background_rect.left + x, self.background_rect.top + y))
 
             counter += 1
-            surface.blit(button.btn_surface, (x, y))
+            self.background_surface.blit(button.btn_surface, (x, y))
+
+        return self.background_surface, self.background_rect
 
     @staticmethod
     def check_hover(button, mouse):
         return button.rect.collidepoint(mouse)
+
+    def set_bg(self):
+        pass
 
 
 class MainMenu(BaseMenu):
@@ -128,6 +135,15 @@ class MainMenu(BaseMenu):
                     ('Настройки', ''),
                     ('Выйти', pygame.QUIT))
 
+    def set_bg(self):
+        scale = 450, 400
+        position = 20, config.HEIGHT - 420
+
+        self.background_surface = pygame.Surface(scale, pygame.SRCALPHA)
+
+        self.background_surface.fill((0, 0, 0, 128))
+        self.background_rect = self.background_surface.get_rect(topleft=position)
+
 
 class PauseMenu(BaseMenu):
     BUTTON_NAMES = (('Продолжить', ''),
@@ -136,3 +152,11 @@ class PauseMenu(BaseMenu):
                     ('В главное меню', events.TO_MAIN_MENU),
                     ('Выйти', pygame.QUIT))
 
+    def set_bg(self):
+        scale = config.WIDTH * 0.8, config.HEIGHT * 0.8
+        position = (config.WIDTH - scale[0]) / 2, (config.HEIGHT - scale[1]) / 2
+
+        self.background_surface = pygame.Surface(scale, pygame.SRCALPHA)
+
+        self.background_surface.fill((0, 0, 0, 128))
+        self.background_rect = self.background_surface.get_rect(topleft=position)

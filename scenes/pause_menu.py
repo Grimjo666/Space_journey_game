@@ -7,8 +7,8 @@ from engine import space, events, menu, scene
 
 
 class PauseMenuScene(scene.BaseScene):
-    def __init__(self, screen, clock):
-        super().__init__(screen, clock)
+    def __init__(self, screen):
+        super().__init__(screen)
 
         self.background = space.SpaceBG(screen)
 
@@ -20,8 +20,10 @@ class PauseMenuScene(scene.BaseScene):
 
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                self.stop()
+                self.trigger_event(events.CLOSE_PAUSE_MENU)
 
     def draw(self):
-        self.pause_menu.draw(self.screen)
+        menu_surface, menu_surface_rect = self.pause_menu.draw()
+
+        self.screen.blit(menu_surface, menu_surface_rect)
 
