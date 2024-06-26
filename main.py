@@ -8,6 +8,26 @@ from scenes.space import SpaceScene
 from engine.scene import SceneManager
 
 
+def main_menu_events_handler(scene_manager, event):
+    if event.type == events.NEW_GAME:
+        scene_manager.get_scene('main_menu_scene').stop()
+        scene_manager.get_scene('space_scene').start()
+
+    elif event.type == events.TO_MAIN_MENU:
+        scene_manager.stop_all()
+        scene_manager.get_scene('main_menu_scene').start()
+
+
+def pause_menu_events_handler(scene_manager, event):
+    if event.type == events.OPEN_PAUSE_MENU:
+        # scene_manager.get_scene('space_scene').stop()
+        scene_manager.get_scene('pause_menu_scene').start()
+
+    elif event.type == events.CLOSE_PAUSE_MENU:
+        scene_manager.get_scene('pause_menu_scene').stop()
+        scene_manager.get_scene('space_scene').start()
+
+
 def main():
     # Создаем игру и окно
     pygame.init()
@@ -33,21 +53,12 @@ def main():
         for event in pygame.event.get():
             scene_manager.handle_events(event)
 
+            main_menu_events_handler(scene_manager, event)
+            pause_menu_events_handler(scene_manager, event)
+
             if event.type == pygame.QUIT:
                 scene_manager.stop_all()
                 running = False
-
-            elif event.type == events.NEW_GAME:
-                scene_manager.get_scene('main_menu_scene').stop()
-                scene_manager.get_scene('space_scene').start()
-
-            elif event.type == events.OPEN_PAUSE_MENU:
-                # scene_manager.get_scene('space_scene').stop()
-                scene_manager.get_scene('pause_menu_scene').start()
-
-            elif event.type == events.CLOSE_PAUSE_MENU:
-                scene_manager.get_scene('pause_menu_scene').stop()
-                scene_manager.get_scene('space_scene').start()
 
         pygame.display.flip()
         clock.tick(config.FPS)

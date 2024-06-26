@@ -9,6 +9,8 @@ class BaseScene:
         self.active = True
         self.screen = screen
 
+        self.run_create_objects = True
+
     @staticmethod
     def trigger_event(event):
         repeat_event = pygame.event.Event(event)
@@ -27,6 +29,11 @@ class BaseScene:
         self.active = True
 
     def scene(self):
+        if self.run_create_objects:
+            self.create_objects()
+            self.setting_up_objects()
+            self.run_create_objects = False
+
         if self.active:
             self.update()
             self.draw()
@@ -35,6 +42,9 @@ class BaseScene:
         self.active = False
 
     def create_objects(self):
+        pass
+
+    def setting_up_objects(self):
         pass
 
 
@@ -84,4 +94,5 @@ class SceneManager:
 
     def draw_scenes(self):
         for scene in self.scenes.values():
-            scene.scene()
+            if scene.active:
+                scene.scene()

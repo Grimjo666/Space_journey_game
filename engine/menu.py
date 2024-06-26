@@ -146,7 +146,7 @@ class MainMenu(BaseMenu):
 
 
 class PauseMenu(BaseMenu):
-    BUTTON_NAMES = (('Продолжить', ''),
+    BUTTON_NAMES = (('Продолжить', events.CLOSE_PAUSE_MENU),
                     ('Загрузить', ''),
                     ('Настройки', ''),
                     ('В главное меню', events.TO_MAIN_MENU),

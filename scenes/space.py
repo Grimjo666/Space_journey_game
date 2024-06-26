@@ -25,6 +25,9 @@ class SpaceScene(scene.BaseScene):
 
         self.player_ship = ships.Cruiser(self.screen_center)
 
+        self.space_objects = None
+
+    def create_objects(self):
         self.space_objects = [
             space.Meteorite((0, 100)),
             space.Meteorite((200, 100)),
