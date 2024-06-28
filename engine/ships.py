@@ -2,6 +2,7 @@ import math
 import pygame
 import pymunk
 
+import config
 from .space import SpaceObject
 
 
@@ -21,12 +22,16 @@ class BaseShip(SpaceObject):
         self._rotate_left_sprites = None
         self._rotate_right_sprites = None
         self.motion_sprite_counter = -1
+        self.rotate_point = self.body.position
 
         self.move_vector = pymunk.Vec2d(0, 0)
 
+    def update_rotate_point(self, camera):
+        self.rotate_point = camera.apply(self.body.position)
+
     def calculate_angle(self):
         m_x, m_y = pygame.mouse.get_pos()
-        p_x, p_y = self.body.position
+        p_x, p_y = self.rotate_point
 
         result_angle = math.atan2(m_y - p_y, m_x - p_x)
 
@@ -102,11 +107,6 @@ class BaseShip(SpaceObject):
 
     def rotate_sprite(self):
         return pygame.transform.rotate(self._current_sprite, -math.degrees(self.body.angle) - 90)
-
-    def draw(self, surface):
-        sprite = self.rotate_sprite()
-        rect = sprite.get_rect(center=self.body.position)
-        surface.blit(sprite, rect.topleft)
 
     def accelerator_animation(self):
         self.motion_sprite_counter += 1

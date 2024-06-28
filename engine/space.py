@@ -142,8 +142,8 @@ class BaseSpaceBG:
             self.bg_color = pygame.Surface((config.WIDTH, config.HEIGHT))
             self.bg_color.fill(bg_color)
 
-    def move(self, camera_position, speed_factor=1):
-        self.update_coordinates(camera_position, speed_factor)
+    def move(self, camera_offset, speed_factor=1):
+        self.update_coordinates(camera_offset, speed_factor)
         if hasattr(self, 'bg_color'):
             self.surface.blit(self.bg_color, (0, 0))
             self.blit_repeated_background()
@@ -151,8 +151,8 @@ class BaseSpaceBG:
             self.surface.blit(self.image, (self.x, self.y))
 
     def update_coordinates(self, coord, speed_factor):
-        self.x += coord[0] * speed_factor
-        self.y += coord[1] * speed_factor
+        self.x -= coord[0] * speed_factor
+        self.y -= coord[1] * speed_factor
         self.wrap_coordinates()
 
     def wrap_coordinates(self):
@@ -172,16 +172,16 @@ class SpaceBG(BaseSpaceBG):
     def __init__(self, surface):
         super().__init__(surface, 'images/space/background/stars.png', bg_color=(33, 9, 74))
 
-    def move(self, camera_position, speed_factor=0.2):
-        super().move(camera_position, speed_factor)
+    def move(self, camera_offset, speed_factor=0.2):
+        super().move(camera_offset, speed_factor)
 
 
 class SpaceBGPlanets(BaseSpaceBG):
     def __init__(self, surface):
         super().__init__(surface, 'images/space/space_objects/planets/planet2.png')
 
-    def move(self, camera_position, speed_factor=0.3):
-        super().move(camera_position, speed_factor)
+    def move(self, camera_offset, speed_factor=0.3):
+        super().move(camera_offset, speed_factor)
 
 
 class SpaceObject:
@@ -218,22 +218,6 @@ class SpaceObject:
 
         self.shape = None
 
-    # def change_scale(self):
-    #     # Обновляем положение тела
-    #     self.body.position = pymunk.Vec2d(self.body.position.x * config.ZOOM, self.body.position.y * config.ZOOM)
-    #
-    #     # Обновляем радиус и массу
-    #     self.radius = self.original_radius * config.ZOOM
-    #     self.mass = self.original_mass * config.ZOOM
-    #
-    #     # Обновляем момент инерции тела
-    #     self.body.moment = pymunk.moment_for_circle(self.mass, 0, self.radius)
-    #
-    #     # Обновляем спрайт
-    #     rect = self.sprite.get_rect()
-    #     self.current_sprite = pygame.transform.scale(self.sprite,
-    #                                                  (int(rect.width * config.ZOOM), int(rect.height * config.ZOOM)))
-
     def get_circle_shape(self):
         circle_shape = pymunk.Circle(self.body, self.radius)
         circle_shape.elasticity = self.ELASTICITY
@@ -256,9 +240,10 @@ class SpaceObject:
             self.shape = self.get_box_shape()
         return self.shape
 
-    def draw(self, surface):
+    def draw(self, surface, camera):
         sprite = self.rotate_sprite()
-        rect = sprite.get_rect(center=self.body.position)
+        position = camera.apply(self.body.position)
+        rect = sprite.get_rect(center=position)
         surface.blit(sprite, rect.topleft)
 
     def rotate_sprite(self):

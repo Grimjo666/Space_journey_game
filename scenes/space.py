@@ -1,10 +1,9 @@
 import pygame
 import pymunk
 import pymunk.pygame_util
-import random
 
 import config
-from engine import ships, space, events, menu, scene
+from engine import ships, space, events, scene
 from engine.camera import Camera
 
 
@@ -12,7 +11,7 @@ class SpaceScene(scene.BaseScene):
     def __init__(self, screen):
         super().__init__(screen)
 
-        self.camera = Camera(config.WIDTH, config.HEIGHT)
+        self.camera = Camera()
 
         self.background = space.SpaceBG(screen)
         self.planets = space.SpaceBGPlanets(self.background.surface)
@@ -64,11 +63,12 @@ class SpaceScene(scene.BaseScene):
 
     def update(self):
         self.physical_space.get_simulation_step()
-        self.camera.update(self.player_ship.body.position)
+        self.camera.update(self.player_ship)
 
-        self.camera.apply(self.physical_space)
-        self.camera.apply(self.background)
-        self.camera.apply(self.planets)
+        self.player_ship.update_rotate_point(self.camera)
+
+        self.planets.move(self.player_ship.body.velocity)
+        self.background.move(self.player_ship.body.velocity)
 
     def draw(self):
         keys = pygame.key.get_pressed()
@@ -79,22 +79,21 @@ class SpaceScene(scene.BaseScene):
         if keys[pygame.K_w] and not keys[pygame.K_SPACE]:
             self.player_ship.accelerator_animation()
             self.player_ship.move_ship()
-            self.player_ship.draw(self.screen)
+            self.player_ship.draw(self.screen, self.camera)
 
             # ускорение
             if keys[pygame.K_LALT]:
-                # self.trigger_event(events.BOOSTE_ACTIVATED)
-                self.player_ship.body.position += pymunk.Vec2d(10, 10)
+                pass
 
         elif keys[pygame.K_SPACE]:
             self.player_ship.deceleration_ship()
 
         # Рисуем корабль
         self.player_ship.rotate_animation()
-        self.player_ship.draw(self.screen)
+        self.player_ship.draw(self.screen, self.camera)
 
         for obj in self.space_objects:
-            obj.draw(self.screen)
+            obj.draw(self.screen, self.camera)
 
         # Отрисовка объектов Pymunk
-        # self.physical_space.space.debug_draw(self.draw_options)
+        self.physical_space.space.debug_draw(self.draw_options)
