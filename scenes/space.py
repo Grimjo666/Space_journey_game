@@ -67,8 +67,8 @@ class SpaceScene(scene.BaseScene):
 
         self.player_ship.update_rotate_point(self.camera)
 
-        self.planets.move(self.player_ship.body.velocity)
         self.background.move(self.player_ship.body.velocity)
+        self.planets.move(self.player_ship.body.velocity)
 
     def draw(self):
         keys = pygame.key.get_pressed()

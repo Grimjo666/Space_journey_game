@@ -172,7 +172,7 @@ class SpaceBG(BaseSpaceBG):
     def __init__(self, surface):
         super().__init__(surface, 'images/space/background/stars.png', bg_color=(33, 9, 74))
 
-    def move(self, camera_offset, speed_factor=0.2):
+    def move(self, camera_offset, speed_factor=0.005):
         super().move(camera_offset, speed_factor)
 
 
@@ -180,7 +180,7 @@ class SpaceBGPlanets(BaseSpaceBG):
     def __init__(self, surface):
         super().__init__(surface, 'images/space/space_objects/planets/planet2.png')
 
-    def move(self, camera_offset, speed_factor=0.3):
+    def move(self, camera_offset, speed_factor=0.008):
         super().move(camera_offset, speed_factor)
 
 
