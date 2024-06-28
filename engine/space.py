@@ -61,9 +61,9 @@ class PhysicalSpace:
     def remove(self, objs):
         self.space.remove(objs.body, objs.shape)
 
-    def move_camera(self, camera_offset):
+    def move(self, camera_position):
         for body in self.space.bodies:
-            body.position += camera_offset
+            body.position += camera_position
 
     def get_simulation_step(self):
         return self.space.step(1 / config.FPS)
@@ -133,42 +133,55 @@ class PhysicalSpace:
         return True
 
 
-class SpaceBG:
-    def __init__(self, surface):
+class BaseSpaceBG:
+    def __init__(self, surface, image_path, bg_color=None):
         self.surface = surface
-        self.bg_color = pygame.Surface((config.WIDTH, config.HEIGHT))
-        self.bg_color.fill((33, 9, 74))
-        self.stars_bg_x = self.stars_bg_y = 0
-        self.stars_bg = pygame.image.load('images/space/background/stars.png').convert_alpha()
+        self.x = self.y = 0
+        self.image = pygame.image.load(image_path).convert_alpha()
+        if bg_color:
+            self.bg_color = pygame.Surface((config.WIDTH, config.HEIGHT))
+            self.bg_color.fill(bg_color)
 
-    def move_camera(self, camera_offset):
-        x, y = camera_offset
-        self.update_coordinates(-x, y)
+    def move(self, camera_position, speed_factor=1):
+        self.update_coordinates(camera_position, speed_factor)
+        if hasattr(self, 'bg_color'):
+            self.surface.blit(self.bg_color, (0, 0))
+            self.blit_repeated_background()
+        else:
+            self.surface.blit(self.image, (self.x, self.y))
 
-        self.surface.blit(self.bg_color, (0, 0))
+    def update_coordinates(self, coord, speed_factor):
+        self.x += coord[0] * speed_factor
+        self.y += coord[1] * speed_factor
+        self.wrap_coordinates()
 
-        self.surface.blit(self.stars_bg, (self.stars_bg_x, self.stars_bg_y))
-        self.surface.blit(self.stars_bg, (self.stars_bg_x, self.stars_bg_y - config.HEIGHT))
-        self.surface.blit(self.stars_bg, (self.stars_bg_x, self.stars_bg_y + config.HEIGHT))
-        self.surface.blit(self.stars_bg, (self.stars_bg_x - config.WIDTH, self.stars_bg_y))
-        self.surface.blit(self.stars_bg, (self.stars_bg_x + config.WIDTH, self.stars_bg_y))
-        self.surface.blit(self.stars_bg, (self.stars_bg_x - config.WIDTH, self.stars_bg_y - config.HEIGHT))
-        self.surface.blit(self.stars_bg, (self.stars_bg_x + config.WIDTH, self.stars_bg_y + config.HEIGHT))
-        self.surface.blit(self.stars_bg, (self.stars_bg_x - config.WIDTH, self.stars_bg_y + config.HEIGHT))
-        self.surface.blit(self.stars_bg, (self.stars_bg_x + config.WIDTH, self.stars_bg_y - config.HEIGHT))
+    def wrap_coordinates(self):
+        if hasattr(self, 'bg_color'):
+            if -config.WIDTH >= self.x or self.x >= config.WIDTH:
+                self.x = 0
+            if -config.HEIGHT >= self.y or self.y >= config.HEIGHT:
+                self.y = 0
 
-    def update_coordinates(self, speed_x, speed_y):
-        stars_bg_x = self.stars_bg_x - speed_x * 0.1
-        stars_bg_y = self.stars_bg_y + speed_y * 0.1
+    def blit_repeated_background(self):
+        for dx in [-config.WIDTH, 0, config.WIDTH]:
+            for dy in [-config.HEIGHT, 0, config.HEIGHT]:
+                self.surface.blit(self.image, (self.x + dx, self.y + dy))
 
-        # Зацикливание спрайта звёзд
-        if -config.WIDTH >= self.stars_bg_x or self.stars_bg_x >= config.WIDTH:
-            stars_bg_x = 0
-        if -config.HEIGHT >= self.stars_bg_y or self.stars_bg_y >= config.HEIGHT:
-            stars_bg_y = 0
 
-        self.stars_bg_x = stars_bg_x
-        self.stars_bg_y = stars_bg_y
+class SpaceBG(BaseSpaceBG):
+    def __init__(self, surface):
+        super().__init__(surface, 'images/space/background/stars.png', bg_color=(33, 9, 74))
+
+    def move(self, camera_position, speed_factor=0.2):
+        super().move(camera_position, speed_factor)
+
+
+class SpaceBGPlanets(BaseSpaceBG):
+    def __init__(self, surface):
+        super().__init__(surface, 'images/space/space_objects/planets/planet2.png')
+
+    def move(self, camera_position, speed_factor=0.3):
+        super().move(camera_position, speed_factor)
 
 
 class SpaceObject:

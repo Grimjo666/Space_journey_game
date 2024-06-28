@@ -5,14 +5,17 @@ import random
 
 import config
 from engine import ships, space, events, menu, scene
-from scenes.pause_menu import PauseMenuScene
+from engine.camera import Camera
 
 
 class SpaceScene(scene.BaseScene):
     def __init__(self, screen):
         super().__init__(screen)
 
+        self.camera = Camera(config.WIDTH, config.HEIGHT)
+
         self.background = space.SpaceBG(screen)
+        self.planets = space.SpaceBGPlanets(self.background.surface)
         self.physical_space = space.PhysicalSpace()
         self.draw_options = pymunk.pygame_util.DrawOptions(screen)
 
@@ -60,14 +63,14 @@ class SpaceScene(scene.BaseScene):
                 self.trigger_event(events.OPEN_PAUSE_MENU)
 
     def update(self):
-        pass
+        self.physical_space.get_simulation_step()
+        self.camera.update(self.player_ship.body.position)
+
+        self.camera.apply(self.physical_space)
+        self.camera.apply(self.background)
+        self.camera.apply(self.planets)
 
     def draw(self):
-        camera_offset = pymunk.Vec2d(self.screen_center[0] - self.player_ship.body.position.x,
-                                     self.screen_center[1] - self.player_ship.body.position.y)
-        self.physical_space.move_camera(camera_offset)
-        self.background.move_camera(camera_offset)
-
         keys = pygame.key.get_pressed()
 
         self.player_ship.inactivity_animation()
@@ -80,7 +83,8 @@ class SpaceScene(scene.BaseScene):
 
             # ускорение
             if keys[pygame.K_LALT]:
-                pass
+                # self.trigger_event(events.BOOSTE_ACTIVATED)
+                self.player_ship.body.position += pymunk.Vec2d(10, 10)
 
         elif keys[pygame.K_SPACE]:
             self.player_ship.deceleration_ship()
@@ -94,6 +98,3 @@ class SpaceScene(scene.BaseScene):
 
         # Отрисовка объектов Pymunk
         # self.physical_space.space.debug_draw(self.draw_options)
-        # после отрисовки всего, обновляем экран
-
-        self.physical_space.get_simulation_step()
