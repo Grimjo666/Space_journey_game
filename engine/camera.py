@@ -23,15 +23,15 @@ class Camera:
     def apply(self, position):
         return int(position[0] - self.camera.x), int(position[1] - self.camera.y)
 
-    def calculate_perimeter_offset(self, mouse_cord, cord):
+    def calculate_perimeter_offset(self, mouse_cord, cord, dimension):
 
         if mouse_cord < self.perimeter_offset:
             offset_x = config.CAMERA_MAX_OFFSET * ((self.perimeter_offset - mouse_cord) / self.perimeter_offset) ** 3
-            cord -= self.width * offset_x
-        elif mouse_cord > self.width - self.perimeter_offset:
-            offset_x = config.CAMERA_MAX_OFFSET * ((mouse_cord - (self.width - self.perimeter_offset))
+            cord -= dimension * offset_x
+        elif mouse_cord > dimension - self.perimeter_offset:
+            offset_x = config.CAMERA_MAX_OFFSET * ((mouse_cord - (dimension - self.perimeter_offset))
                                                    / self.perimeter_offset) ** 3
-            cord += self.width * offset_x
+            cord += dimension * offset_x
 
         return cord
 
@@ -43,10 +43,10 @@ class Camera:
         mouse = pygame.mouse.get_pos()
 
         # Проверка и расчет смещения по оси X
-        x = self.calculate_perimeter_offset(mouse[0], x)
+        x = self.calculate_perimeter_offset(mouse[0], x, self.width)
 
         # Проверка и расчет смещения по оси Y
-        y = self.calculate_perimeter_offset(mouse[1], y)
+        y = self.calculate_perimeter_offset(mouse[1], y, self.height)
 
         self.camera = pygame.Rect(x, y, self.width, self.height)
 
