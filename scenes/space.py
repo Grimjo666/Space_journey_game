@@ -67,8 +67,8 @@ class SpaceScene(scene.BaseScene):
 
         self.player_ship.update_rotate_point(self.camera)
 
-        self.background.move(self.player_ship.body.velocity)
-        self.planets.move(self.player_ship.body.velocity)
+        self.background.draw(self.camera)
+        self.planets.draw(self.camera)
 
     def draw(self):
         keys = pygame.key.get_pressed()
@@ -96,4 +96,5 @@ class SpaceScene(scene.BaseScene):
             obj.draw(self.screen, self.camera)
 
         # Отрисовка объектов Pymunk
-        self.physical_space.space.debug_draw(self.draw_options)
+        # self.physical_space.space.debug_draw(self.draw_options)
+
