@@ -5,6 +5,7 @@ import pymunk.pygame_util
 import config
 from engine import ships, space, events, scene
 from engine.camera import Camera
+from engine.behaviors import BasicPatrolling
 
 
 class SpaceScene(scene.BaseScene):
@@ -27,26 +28,22 @@ class SpaceScene(scene.BaseScene):
 
         self.player_ship = ships.Cruiser(self.screen_center)
 
+        self.test_enemy = BasicPatrolling(ships.Cruiser((300, 300)))
+
         self.space_objects = None
 
     def create_objects(self):
         self.space_objects = [
-            space.Meteorite((0, 100)),
-            space.Meteorite((200, 100)),
-            space.Meteorite((config.WIDTH, config.HEIGHT))
+            space.Meteorite((100, 900)),
+            space.Meteorite((300, 1000)),
+            space.Meteorite((config.WIDTH, config.HEIGHT)),
         ]
 
         self.physical_space.add(self.player_ship)
+        self.physical_space.add(self.test_enemy.ship)
+
         for obj in self.space_objects:
             self.physical_space.add(obj)
-
-    @staticmethod
-    def handle_zoom(event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 4 and config.ZOOM < 1.6:  # колесико вверх
-                config.ZOOM *= 1.1
-            elif event.button == 5 and config.ZOOM > 0.55:  # колесико вниз
-                config.ZOOM /= 1.1
 
     def handle_event(self, event):
         if event.type == events.GAME_OVER:
@@ -70,14 +67,13 @@ class SpaceScene(scene.BaseScene):
         self.background.draw(self.camera)
         self.planets.draw(self.camera)
 
+        self.test_enemy.update_patrol()
+
     def draw(self):
         keys = pygame.key.get_pressed()
 
-        self.player_ship.inactivity_animation()
-
         # движение по нажатию на кнопку W
         if keys[pygame.K_w] and not keys[pygame.K_SPACE]:
-            self.player_ship.accelerator_animation()
             self.player_ship.move_ship()
             self.player_ship.draw(self.screen, self.camera)
 
@@ -91,6 +87,8 @@ class SpaceScene(scene.BaseScene):
         # Рисуем корабль
         self.player_ship.rotate_animation()
         self.player_ship.draw(self.screen, self.camera)
+
+        self.test_enemy.ship.draw(self.screen, self.camera)
 
         for obj in self.space_objects:
             obj.draw(self.screen, self.camera)

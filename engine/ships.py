@@ -16,7 +16,6 @@ class BaseShip(SpaceObject):
 
     def __init__(self, ship_position,  body_type='circle'):
         super().__init__(ship_position, body_type)
-        self._current_sprite = None
 
         self._accelerator_sprites = None
         self._rotate_left_sprites = None
@@ -26,11 +25,18 @@ class BaseShip(SpaceObject):
 
         self.move_vector = pymunk.Vec2d(0, 0)
 
-    def update_rotate_point(self, camera):
-        self.rotate_point = camera.apply(self.body.position)
+    def update_rotate_point(self, camera=None):
+        if camera:
+            self.rotate_point = camera.apply(self.body.position)
+        else:
+            self.rotate_point = self.body.position
 
-    def calculate_angle(self):
-        m_x, m_y = pygame.mouse.get_pos()
+    def calculate_angle(self, target_pos=None):
+        if target_pos:
+            m_x, m_y = target_pos
+        else:
+            m_x, m_y = pygame.mouse.get_pos()
+
         p_x, p_y = self.rotate_point
 
         result_angle = math.atan2(m_y - p_y, m_x - p_x)
@@ -48,9 +54,11 @@ class BaseShip(SpaceObject):
 
         self.move_vector = pymunk.Vec2d(dx, dy)
 
-    def smooth_rotation(self):
+    def smooth_rotation(self, target_angle=None):
         # Логика поворота с симуляцией массы корабля
-        target_angle = self.calculate_angle()
+        if not target_angle:
+            target_angle = self.calculate_angle()
+
         current_angle = self.body.angle
         difference = target_angle - current_angle
 
@@ -89,6 +97,7 @@ class BaseShip(SpaceObject):
             self.body.angle += 2 * math.pi
 
     def move_ship(self):
+        self.accelerator_animation()
         self.get_movement_vector()
 
         impulse = self.move_vector * self.ENGINE_POWER
@@ -106,20 +115,23 @@ class BaseShip(SpaceObject):
             self.body.velocity = self.body.velocity.normalized() * self.MAX_SPEED
 
     def rotate_sprite(self):
-        return pygame.transform.rotate(self._current_sprite, -math.degrees(self.body.angle) - 90)
+        return pygame.transform.rotate(self.current_sprite, -math.degrees(self.body.angle) - 90)
 
     def accelerator_animation(self):
         self.motion_sprite_counter += 1
         if self.motion_sprite_counter == 4:
             self.motion_sprite_counter = 0
 
-        self._current_sprite = self._accelerator_sprites[self.motion_sprite_counter]
+        self.current_sprite = self._accelerator_sprites[self.motion_sprite_counter]
 
-    def rotate_animation(self):
+    def rotate_animation(self, target_angle=None):
         # Активируем вращение корабля
-        self.smooth_rotation()
+        self.smooth_rotation(target_angle)
 
-        difference = self.calculate_angle() - self.body.angle
+        if not target_angle:
+            target_angle = self.calculate_angle()
+
+        difference = target_angle - self.body.angle
         if difference > math.pi:
             difference -= 2 * math.pi
         elif difference < -math.pi:
@@ -129,15 +141,15 @@ class BaseShip(SpaceObject):
         if abs(difference) > math.radians(0.5):
             if difference < 0:
                 self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self._rotate_left_sprites)
-                self._current_sprite = self._rotate_left_sprites[self.motion_sprite_counter]
+                self.current_sprite = self._rotate_left_sprites[self.motion_sprite_counter]
             else:
                 self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self._rotate_right_sprites)
-                self._current_sprite = self._rotate_right_sprites[self.motion_sprite_counter]
+                self.current_sprite = self._rotate_right_sprites[self.motion_sprite_counter]
         else:
-            self._current_sprite = self._sprite
+            self.current_sprite = self._sprite
 
     def inactivity_animation(self):
-        self._current_sprite = self._sprite
+        self.current_sprite = self._sprite
 
 
 class Cruiser(BaseShip):

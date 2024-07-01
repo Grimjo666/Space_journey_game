@@ -164,9 +164,21 @@ class BaseSpaceBG:
                 self.y = 0
 
     def blit_repeated_background(self):
-        for dx in [-config.WIDTH, 0, config.WIDTH]:
-            for dy in [-config.HEIGHT, 0, config.HEIGHT]:
-                self.surface.blit(self.image, (self.x + dx, self.y + dy))
+        # for dx in [-config.WIDTH, 0, config.WIDTH]:
+        #     for dy in [-config.HEIGHT, 0, config.HEIGHT]:
+        #         self.surface.blit(self.image, (self.x + dx, self.y + dy))y
+
+        self.surface.blit(self.bg_color, (0, 0))
+
+        self.surface.blit(self.image, (self.x, self.y))
+        self.surface.blit(self.image, (self.x, self.y - config.HEIGHT))
+        self.surface.blit(self.image, (self.x, self.y + config.HEIGHT))
+        self.surface.blit(self.image, (self.x - config.WIDTH, self.y))
+        self.surface.blit(self.image, (self.x + config.WIDTH, self.y))
+        self.surface.blit(self.image, (self.x - config.WIDTH, self.y - config.HEIGHT))
+        self.surface.blit(self.image, (self.x + config.WIDTH, self.y + config.HEIGHT))
+        self.surface.blit(self.image, (self.x - config.WIDTH, self.y + config.HEIGHT))
+        self.surface.blit(self.image, (self.x + config.WIDTH, self.y - config.HEIGHT))
 
 
 class SpaceBG(BaseSpaceBG):
@@ -201,7 +213,7 @@ class SpaceObject:
         self.health = self.HEALTH
 
         self._sprite = pygame.image.load(self.SPRITE_PATH).convert_alpha()
-        self._current_sprite = self._sprite
+        self.current_sprite = self._sprite
 
         self.original_radius = self._sprite.get_rect().width // 2
         self.radius = self.original_radius
