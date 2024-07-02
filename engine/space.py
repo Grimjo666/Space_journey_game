@@ -214,6 +214,7 @@ class SpaceObject:
 
         self._sprite = pygame.image.load(self.SPRITE_PATH).convert_alpha()
         self.current_sprite = self._sprite
+        self.overlay_sprites_list = []
 
         self.original_radius = self._sprite.get_rect().width // 2
         self.radius = self.original_radius
@@ -253,14 +254,34 @@ class SpaceObject:
             self.shape = self.get_box_shape()
         return self.shape
 
+    def overlay_sprites(self, sprites):
+        if not sprites:
+            return self._sprite
+        elif len(sprites) == 1:
+            return sprites[0]
+
+        # Определяем размер результирующего изображения
+        result_width = max(sprite.get_width() for sprite in sprites)
+        result_height = max(sprite.get_height() for sprite in sprites)
+        result_image = pygame.Surface((result_width, result_height), pygame.SRCALPHA)
+
+        # Накладываем спрайты друг на друга
+        for sprite in sprites:
+            result_image.blit(sprite, (0, 0))
+
+        sprites.clear()
+        return result_image
+
     def draw(self, surface, camera):
+        self.current_sprite = self.overlay_sprites(self.overlay_sprites_list)
+
         sprite = self.rotate_sprite()
         position = camera.apply(self.body.position)
         rect = sprite.get_rect(center=position)
         surface.blit(sprite, rect.topleft)
 
     def rotate_sprite(self):
-        return pygame.transform.rotate(self._sprite, -math.degrees(self.body.angle))
+        return pygame.transform.rotate(self.current_sprite, -math.degrees(self.body.angle))
 
     def take_damage(self, damage):
         self.health -= damage

@@ -97,7 +97,7 @@ class BaseShip(SpaceObject):
             self.body.angle += 2 * math.pi
 
     def move_ship(self):
-        self.accelerator_animation()
+        self.add_accelerator_animation()
         self.get_movement_vector()
 
         impulse = self.move_vector * self.ENGINE_POWER
@@ -117,14 +117,14 @@ class BaseShip(SpaceObject):
     def rotate_sprite(self):
         return pygame.transform.rotate(self.current_sprite, -math.degrees(self.body.angle) - 90)
 
-    def accelerator_animation(self):
+    def add_accelerator_animation(self):
         self.motion_sprite_counter += 1
         if self.motion_sprite_counter == 4:
             self.motion_sprite_counter = 0
 
-        self.current_sprite = self._accelerator_sprites[self.motion_sprite_counter]
+        self.overlay_sprites_list.append(self._accelerator_sprites[self.motion_sprite_counter])
 
-    def rotate_animation(self, target_angle=None):
+    def add_rotate_animation(self, target_angle=None):
         # Активируем вращение корабля
         self.smooth_rotation(target_angle)
 
@@ -141,12 +141,12 @@ class BaseShip(SpaceObject):
         if abs(difference) > math.radians(0.5):
             if difference < 0:
                 self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self._rotate_left_sprites)
-                self.current_sprite = self._rotate_left_sprites[self.motion_sprite_counter]
+                self.overlay_sprites_list.append(self._rotate_left_sprites[self.motion_sprite_counter])
             else:
                 self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self._rotate_right_sprites)
-                self.current_sprite = self._rotate_right_sprites[self.motion_sprite_counter]
+                self.overlay_sprites_list.append(self._rotate_right_sprites[self.motion_sprite_counter])
         else:
-            self.current_sprite = self._sprite
+            self.overlay_sprites_list.append(self._sprite)
 
     def inactivity_animation(self):
         self.current_sprite = self._sprite

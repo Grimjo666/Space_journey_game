@@ -75,7 +75,6 @@ class SpaceScene(scene.BaseScene):
         # движение по нажатию на кнопку W
         if keys[pygame.K_w] and not keys[pygame.K_SPACE]:
             self.player_ship.move_ship()
-            self.player_ship.draw(self.screen, self.camera)
 
             # ускорение
             if keys[pygame.K_LALT]:
@@ -85,7 +84,7 @@ class SpaceScene(scene.BaseScene):
             self.player_ship.deceleration_ship()
 
         # Рисуем корабль
-        self.player_ship.rotate_animation()
+        self.player_ship.add_rotate_animation()
         self.player_ship.draw(self.screen, self.camera)
 
         self.test_enemy.ship.draw(self.screen, self.camera)

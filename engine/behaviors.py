@@ -60,7 +60,7 @@ class BasicPatrolling:
         if not angle_difference < math.radians(1):  # Если корабль смотрит в направлении цели
 
             # Повернуть корабль в направлении следующей точки патруля
-            self.ship.rotate_animation(target_angle)
+            self.ship.add_rotate_animation(target_angle)
             print('rotate')
 
         else:
