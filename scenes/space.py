@@ -69,25 +69,15 @@ class SpaceScene(scene.BaseScene):
 
         self.test_enemy.update_patrol()
 
+        self.player_ship.ship_control(keys=pygame.key.get_pressed())
+
     def draw(self):
-        keys = pygame.key.get_pressed()
-
-        # движение по нажатию на кнопку W
-        if keys[pygame.K_w] and not keys[pygame.K_SPACE]:
-            self.player_ship.move_ship()
-
-            # ускорение
-            if keys[pygame.K_LALT]:
-                pass
-
-        elif keys[pygame.K_SPACE]:
-            self.player_ship.deceleration_ship()
-
-        # Рисуем корабль
-        self.player_ship.add_rotate_animation()
-        self.player_ship.draw(self.screen, self.camera)
+        self.player_ship.draw(self.screen, self.camera)  # Рисуем корабль
 
         self.test_enemy.ship.draw(self.screen, self.camera)
+
+        # Отображение поинтов патрулирования
+        self.test_enemy.draw_patrole_points(self.screen, self.camera)
 
         for obj in self.space_objects:
             obj.draw(self.screen, self.camera)

@@ -31,7 +31,6 @@ class BaseScene:
     def scene(self):
         if self.run_create_objects:
             self.create_objects()
-            self.setting_up_objects()
             self.run_create_objects = False
 
         if self.active:

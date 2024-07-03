@@ -55,6 +55,13 @@ class BaseShip(SpaceObject):
         self.move_vector = pymunk.Vec2d(dx, dy)
 
     def smooth_rotation(self, target_angle=None):
+        """
+        Метод должен вызываться после всех действий с перемещением корабля
+        :param target_angle:
+        :return:
+        """
+        self.add_rotate_animation(target_angle)
+
         # Логика поворота с симуляцией массы корабля
         if not target_angle:
             target_angle = self.calculate_angle()
@@ -125,8 +132,6 @@ class BaseShip(SpaceObject):
         self.overlay_sprites_list.append(self._accelerator_sprites[self.motion_sprite_counter])
 
     def add_rotate_animation(self, target_angle=None):
-        # Активируем вращение корабля
-        self.smooth_rotation(target_angle)
 
         if not target_angle:
             target_angle = self.calculate_angle()
@@ -150,6 +155,19 @@ class BaseShip(SpaceObject):
 
     def inactivity_animation(self):
         self.current_sprite = self._sprite
+
+    def ship_control(self, keys, target_angle=None):
+        # движение по нажатию на кнопку W
+        if keys[pygame.K_w] and not keys[pygame.K_SPACE]:
+            self.move_ship()  # Активируем движение корабля
+            # ускорение
+            if keys[pygame.K_LALT]:
+                pass
+
+        elif keys[pygame.K_SPACE]:
+            self.deceleration_ship()  # Активируем торможение корабля
+
+        self.smooth_rotation(target_angle)  # Активируем вращение корабля
 
 
 class Cruiser(BaseShip):

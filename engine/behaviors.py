@@ -46,42 +46,60 @@ class BasicPatrolling:
         self.patrol_points = [
             (random.randint(1, 1500), random.randint(1, 1500)) for i in range(random.randrange(3, 10))
         ]
+        print('Updates', f"len - {len(self.patrol_points)}")
 
     def update_patrol(self):
         target_point = self.patrol_points[self.current_point_index]
+        self.ship.update_rotate_point()
 
-        if self.current_point_index == len(self.patrol_points):
-            self.update_patrol_points()
+        keys_dict = {
+            pygame.K_w: False,
+            pygame.K_SPACE: False,
+            pygame.K_LALT: False
+        }
 
         target_angle = self.ship.calculate_angle(target_point)
         current_angle = self.ship.body.angle
         angle_difference = abs(target_angle - current_angle)
 
-        if not angle_difference < math.radians(1):  # Если корабль смотрит в направлении цели
-
-            # Повернуть корабль в направлении следующей точки патруля
-            self.ship.add_rotate_animation(target_angle)
-            print('rotate')
-
-        else:
+        if angle_difference < math.radians(1):
             self.ship.body.angle = target_angle
             distance_to_target = self.ship.body.position.get_distance(target_point)
             current_speed = self.ship.body.velocity.length
 
             # Если расстояние до цели больше текущей скорости, двигаться
             if distance_to_target > current_speed and self.move:
-                self.ship.move_ship()
-                self.ship.update_rotate_point()
-                print('move')
+                keys_dict[pygame.K_w] = True
+
             else:
                 # Тормозить, если расстояние до цели меньше порога
-                self.ship.deceleration_ship()
+                keys_dict[pygame.K_SPACE] = True
                 self.move = False
-                print('break')
+
                 # Если корабль почти остановился, перейти к следующей точке
                 if current_speed < 1:  # Можно задать пороговое значение для остановки
                     self.move = True
+
+                    # Проверяем пройдена ли последняя патрульная точка
+                    if self.current_point_index == len(self.patrol_points) - 1:
+                        # Обновляем список с точками
+                        self.update_patrol_points()
+
                     self.current_point_index = (self.current_point_index + 1) % len(self.patrol_points)
+
+        self.ship.ship_control(keys=keys_dict, target_angle=target_angle)
+
+    def draw_patrole_points(self, screen, camera):
+        """
+        Отладочный метод
+        :param screen:
+        :param camera:
+        :return:
+        """
+        for position in self.patrol_points:
+            position = camera.apply(position)
+            rect = pygame.Rect(*position, 40, 40)
+            pygame.draw.rect(screen, 'red', rect)
 
     def update(self):
         if self.state == 'patrolling':
