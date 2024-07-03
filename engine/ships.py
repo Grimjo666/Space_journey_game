@@ -2,7 +2,6 @@ import math
 import pygame
 import pymunk
 
-import config
 from .space import SpaceObject
 
 

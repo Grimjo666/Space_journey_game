@@ -9,26 +9,7 @@ import config
 from engine.ships import Cruiser
 
 
-class BasicPatrolling:
-    # def __init__(self):
-    #     self.patrol_area = 700, 700
-    #     self.patrol_points = [pymunk.Vec2d(500, 300), pymunk.Vec2d(630, 1000)]
-    #     self.current_point_index = 0
-    #
-    #     self.ship = Cruiser((0, 0))
-    #
-    # def patrol(self):
-    #     target_pos = self.patrol_points[self.current_point_index]
-    #     print(self.ship.body.position.length)
-    #     self.ship.rotate_animation(target_pos)
-    #
-    #     if self.ship.body.position.length < target_pos.length:
-    #         self.ship.move_ship()
-    #     else:
-    #         self.ship.deceleration_ship()
-    #         self.current_point_index += 1
-    #         if self.current_point_index == len(self.patrol_points):
-    #             self.current_point_index = 0
+class BasePatrolling:
 
     def __init__(self, ship):
         self.ship = ship
@@ -46,9 +27,8 @@ class BasicPatrolling:
         self.patrol_points = [
             (random.randint(1, 1500), random.randint(1, 1500)) for i in range(random.randrange(3, 10))
         ]
-        print('Updates', f"len - {len(self.patrol_points)}")
 
-    def update_patrol(self):
+    def update(self):
         target_point = self.patrol_points[self.current_point_index]
         self.ship.update_rotate_point()
 
@@ -100,10 +80,3 @@ class BasicPatrolling:
             position = camera.apply(position)
             rect = pygame.Rect(*position, 40, 40)
             pygame.draw.rect(screen, 'red', rect)
-
-    def update(self):
-        if self.state == 'patrolling':
-            self.update_patrol()
-
-        # Обновить положение и повернуть спрайт
-        self.ship.rotate_sprite()

@@ -13,10 +13,6 @@ class Camera:
         self.height = config.HEIGHT
         self.camera = pygame.Rect(0, 0, self.width, self.height)
 
-        rect_size_x, rect_size_y = self.width * 0.6, self.height * 0.6
-        rect_pos = (config.WIDTH - rect_size_x) // 2, (config.HEIGHT - rect_size_y) // 2
-        self.small_rect = pygame.Rect(*rect_pos, rect_size_x, rect_size_y)
-
         self.screen_center = config.WIDTH // 2, config.HEIGHT // 2
         self.perimeter_offset = config.CAMERA_PERIMETER_OFFSET
 

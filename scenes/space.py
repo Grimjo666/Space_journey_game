@@ -5,7 +5,7 @@ import pymunk.pygame_util
 import config
 from engine import ships, space, events, scene
 from engine.camera import Camera
-from engine.behaviors import BasicPatrolling
+from engine.npc.space_ships import SpaceShipNPCManager, NeutralShip
 
 
 class SpaceScene(scene.BaseScene):
@@ -27,8 +27,7 @@ class SpaceScene(scene.BaseScene):
         self.screen_center = config.WIDTH // 2, config.HEIGHT // 2
 
         self.player_ship = ships.Cruiser(self.screen_center)
-
-        self.test_enemy = BasicPatrolling(ships.Cruiser((300, 300)))
+        self.npc_manager = None
 
         self.space_objects = None
 
@@ -37,10 +36,19 @@ class SpaceScene(scene.BaseScene):
             space.Meteorite((100, 900)),
             space.Meteorite((300, 1000)),
             space.Meteorite((config.WIDTH, config.HEIGHT)),
+            space.Meteorite2((500, 500)),
+            space.Meteorite2((900, 900))
+
         ]
 
+        npc_tup = (
+            NeutralShip((i, i))
+            for i in range(1, 1001, 100)
+        )
+
+        self.npc_manager = SpaceShipNPCManager(npc_tup)
+
         self.physical_space.add(self.player_ship)
-        self.physical_space.add(self.test_enemy.ship)
 
         for obj in self.space_objects:
             self.physical_space.add(obj)
@@ -67,17 +75,10 @@ class SpaceScene(scene.BaseScene):
         self.background.draw(self.camera)
         self.planets.draw(self.camera)
 
-        self.test_enemy.update_patrol()
-
         self.player_ship.ship_control(keys=pygame.key.get_pressed())
 
     def draw(self):
         self.player_ship.draw(self.screen, self.camera)  # Рисуем корабль
-
-        self.test_enemy.ship.draw(self.screen, self.camera)
-
-        # Отображение поинтов патрулирования
-        self.test_enemy.draw_patrole_points(self.screen, self.camera)
 
         for obj in self.space_objects:
             obj.draw(self.screen, self.camera)
