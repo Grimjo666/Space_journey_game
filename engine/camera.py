@@ -7,6 +7,9 @@ import config
 from engine.space import Utils
 
 
+LERP_FACTOR = 0.5 / (config.FPS / 30)
+
+
 class Camera:
     def __init__(self):
         self.width = config.WIDTH
@@ -22,27 +25,34 @@ class Camera:
     def calculate_perimeter_offset(self, mouse_cord, cord, dimension):
 
         if mouse_cord < self.perimeter_offset:
-            offset_x = config.CAMERA_MAX_OFFSET * ((self.perimeter_offset - mouse_cord) / self.perimeter_offset) ** 3
-            cord -= dimension * offset_x
+            offset = config.CAMERA_MAX_OFFSET * ((self.perimeter_offset - mouse_cord) / self.perimeter_offset) ** 3
+            return -dimension * offset
         elif mouse_cord > dimension - self.perimeter_offset:
-            offset_x = config.CAMERA_MAX_OFFSET * ((mouse_cord - (dimension - self.perimeter_offset))
+            offset = config.CAMERA_MAX_OFFSET * ((mouse_cord - (dimension - self.perimeter_offset))
                                                    / self.perimeter_offset) ** 3
-            cord += dimension * offset_x
+            return dimension * offset
 
-        return cord
+        return 0
 
     def update(self, target):
         # Центрировать камеру на игроке
-        x = int(target.body.position.x - self.screen_center[0])
-        y = int(target.body.position.y - self.screen_center[1])
+        base_x = int(target.body.position.x - self.screen_center[0])
+        base_y = int(target.body.position.y - self.screen_center[1])
 
         mouse = pygame.mouse.get_pos()
 
         # Проверка и расчет смещения по оси X
-        x = self.calculate_perimeter_offset(mouse[0], x, self.width)
-
+        x = pygame.math.lerp(
+            self.camera.x,
+            base_x + self.calculate_perimeter_offset(mouse[0], base_x, self.width),
+            LERP_FACTOR
+        )
         # Проверка и расчет смещения по оси Y
-        y = self.calculate_perimeter_offset(mouse[1], y, self.height)
+        y = pygame.math.lerp(
+            self.camera.y,
+            base_y + self.calculate_perimeter_offset(mouse[1], base_y, self.height),
+            LERP_FACTOR
+        )
 
         self.camera = pygame.Rect(x, y, self.width, self.height)
 
