@@ -1,11 +1,16 @@
 import pygame
+import time
 
 import config
-from engine import events
+from engine import events, scene
+from engine.scene import SceneManager
+
 from scenes.main_menu import MainMenuScene
 from scenes.pause_menu import PauseMenuScene
 from scenes.space import SpaceScene
-from engine.scene import SceneManager
+
+
+FIXED_TIME_STEP = 1.0 / 30
 
 
 def main_menu_events_handler(scene_manager, event):
@@ -45,8 +50,17 @@ def main():
     scene_manager.add_scene('space_scene', SpaceScene(screen), active=False)
     scene_manager.add_scene('pause_menu_scene', PauseMenuScene(screen), active=False)
 
+    start_time = time.perf_counter()
+
     running = True
     while running:
+        current_time = time.perf_counter()
+        frame_time = current_time - start_time
+        start_time = current_time
+        scene.FPS_STEP_COUNTER += frame_time
+
+        if scene.FPS_STEP_COUNTER >= FIXED_TIME_STEP:
+            scene.FPS_STEP_COUNTER = 0
 
         scene_manager.draw_scenes()
 

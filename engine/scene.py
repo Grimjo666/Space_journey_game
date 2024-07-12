@@ -4,10 +4,17 @@ import config
 from engine import events
 
 
+FPS_STEP_COUNTER = 0
+
+
 class BaseScene:
     def __init__(self, screen):
         self.active = True
         self.screen = screen
+
+        self.time_running = False
+        self.start_time = pygame.time.get_ticks()
+        self.time = 0
 
         self.run_create_objects = True
 
@@ -39,6 +46,7 @@ class BaseScene:
 
     def stop(self):
         self.active = False
+        self.time_running = False
 
     def create_objects(self):
         pass

@@ -1,10 +1,6 @@
-import math
-
 import pygame
-import pymunk
 
 import config
-from engine.space import Utils
 
 
 LERP_FACTOR = 0.5 / (config.FPS / 30)

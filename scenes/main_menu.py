@@ -13,8 +13,6 @@ class MainMenuScene(scene.BaseScene):
         self.background = pygame.image.load('images/main_menu/background/galaxy-space.jpg').convert()
 
         self.menu = MainMenu()
-        self.menu.margin_left = 40
-        self.menu.margin_top = 30
 
     def draw(self):
         menu_surface, menu_surface_rect = self.menu.draw()

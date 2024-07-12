@@ -1,3 +1,5 @@
+import random
+
 import pygame
 import pymunk
 import pymunk.pygame_util
@@ -32,6 +34,8 @@ class SpaceScene(scene.BaseScene):
         self.space_objects = None
 
     def create_objects(self):
+        pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
+
         self.space_objects = [
             space.Meteorite((100, 900)),
             space.Meteorite((300, 1000)),
@@ -67,6 +71,13 @@ class SpaceScene(scene.BaseScene):
                 self.trigger_event(events.OPEN_PAUSE_MENU)
 
     def update(self):
+        if not self.time_running:
+            self.start_time = pygame.time.get_ticks()
+            self.time_running = True
+
+        # Обновляем время внутри сцены
+        self.time = (pygame.time.get_ticks() - self.start_time)
+
         self.physical_space.get_simulation_step()
         self.camera.update(self.player_ship)
 

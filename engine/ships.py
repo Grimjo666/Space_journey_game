@@ -2,7 +2,12 @@ import math
 import pygame
 import pymunk
 
+import config
 from .space import SpaceObject
+from engine import scene
+
+
+FPS_FACTOR = 30 / config.FPS
 
 
 class BaseShip(SpaceObject):
@@ -21,8 +26,6 @@ class BaseShip(SpaceObject):
         self._rotate_right_sprites = None
         self.motion_sprite_counter = -1
         self.rotate_point = self.body.position
-
-        self.move_vector = pymunk.Vec2d(0, 0)
 
     def update_rotate_point(self, camera=None):
         if camera:
@@ -51,7 +54,7 @@ class BaseShip(SpaceObject):
         dx = self.MAX_SPEED * math.cos(self.body.angle)
         dy = self.MAX_SPEED * math.sin(self.body.angle)
 
-        self.move_vector = pymunk.Vec2d(dx, dy)
+        return pymunk.Vec2d(dx, dy)
 
     def smooth_rotation(self, target_angle=None):
         """
@@ -68,7 +71,7 @@ class BaseShip(SpaceObject):
         current_angle = self.body.angle
         difference = target_angle - current_angle
 
-        if abs(difference) <= 0.01:
+        if abs(difference) <= 0.08:
             difference = 0
 
         if difference > math.pi:
@@ -93,7 +96,6 @@ class BaseShip(SpaceObject):
 
         else:
             self.body.angular_velocity = 0
-
         # Применяем угловую скорость к текущему углу
         self.body.angle += self.body.angular_velocity
 
@@ -104,16 +106,16 @@ class BaseShip(SpaceObject):
 
     def move_ship(self):
         self.add_accelerator_animation()
-        self.get_movement_vector()
 
-        impulse = self.move_vector * self.ENGINE_POWER
-        self.body.apply_impulse_at_world_point(impulse, (0, 0))
+        if scene.FPS_STEP_COUNTER == 0:
+            impulse = self.get_movement_vector() * self.ENGINE_POWER
+            self.body.apply_impulse_at_world_point(impulse, (0, 0))
         self.limit_velocity()
 
     def deceleration_ship(self):
         if self.body.velocity.length < self.MAX_SPEED * 0.1:
             self.body.velocity = pymunk.Vec2d(0, 0)
-        else:
+        elif scene.FPS_STEP_COUNTER == 0:
             self.body.velocity *= 0.95
 
     def limit_velocity(self):
@@ -124,9 +126,10 @@ class BaseShip(SpaceObject):
         return pygame.transform.rotate(self.current_sprite, -math.degrees(self.body.angle) - 90)
 
     def add_accelerator_animation(self):
-        self.motion_sprite_counter += 1
-        if self.motion_sprite_counter == 4:
-            self.motion_sprite_counter = 0
+        if scene.FPS_STEP_COUNTER == 0:
+            self.motion_sprite_counter += 1
+            if self.motion_sprite_counter == 4:
+                self.motion_sprite_counter = 0
 
         self.overlay_sprites_list.append(self._accelerator_sprites[self.motion_sprite_counter])
 
@@ -136,6 +139,10 @@ class BaseShip(SpaceObject):
             target_angle = self.calculate_angle()
 
         difference = target_angle - self.body.angle
+
+        if abs(difference) <= 0.08:
+            difference = 0
+
         if difference > math.pi:
             difference -= 2 * math.pi
         elif difference < -math.pi:
@@ -144,10 +151,12 @@ class BaseShip(SpaceObject):
         # Если разница в углах больше, то вычисляем направление вращения
         if abs(difference) > math.radians(0.5):
             if difference < 0:
-                self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self._rotate_left_sprites)
+                if scene.FPS_STEP_COUNTER == 0:  # настраиваем скорость анимации
+                    self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self._rotate_left_sprites)
                 self.overlay_sprites_list.append(self._rotate_left_sprites[self.motion_sprite_counter])
             else:
-                self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self._rotate_right_sprites)
+                if scene.FPS_STEP_COUNTER == 0:  # настраиваем скорость анимации
+                    self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self._rotate_right_sprites)
                 self.overlay_sprites_list.append(self._rotate_right_sprites[self.motion_sprite_counter])
         else:
             self.overlay_sprites_list.append(self._sprite)
@@ -179,9 +188,9 @@ class Cruiser(BaseShip):
 
     HEALTH = 300
 
-    ROTATE_SPEED = math.radians(3)
+    ROTATE_SPEED = math.radians(4 * FPS_FACTOR)
     ROTATE_SLOWDOWN_THRESHOLD = math.radians(30)
-    MIN_ROTATE_SPEED = math.radians(1)
+    MIN_ROTATE_SPEED = math.radians(2 * FPS_FACTOR)
 
     def __init__(self, ship_position, body_type='circle'):
         super().__init__(ship_position, body_type)

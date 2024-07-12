@@ -5,16 +5,7 @@ import pymunk
 
 import config
 from engine import events
-
-
-class Utils:
-    @staticmethod
-    def lerp(start, end, proportion):
-        return round(start + (end - start) * proportion, 3)
-
-    @staticmethod
-    def invert_two_digit(digit):
-        return -digit[0], -digit[1]
+from engine.tools import ToolMixin
 
 
 # class ScaledSurface:
@@ -191,7 +182,7 @@ class SpaceBG(BaseSpaceBG):
 
 class SpaceBGPlanets(BaseSpaceBG):
     def __init__(self, surface):
-        super().__init__(surface, 'images/space/space_objects/planets/planet2.png')
+        super().__init__(surface, 'images/space/space_objects/planets/saturn.png')
 
     def draw(self, camera, **kwargs):
         super().draw(camera, speed_factor=0.6)
@@ -306,3 +297,10 @@ class Meteorite2(SpaceObject):
     SPRITE_PATH = 'images/space/space_objects/meteorites/meteorite_roma-test2.png'
 
     HEALTH = 100
+
+
+class SpaceSnot(SpaceObject):
+    MASS = 100
+    ELASTICITY = 0.8
+    FRICTION = 1
+    SPRITE_PATH = 'images/space/space_objects/meteorites/space_snot.png'

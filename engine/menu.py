@@ -135,6 +135,12 @@ class MainMenu(BaseMenu):
                     ('Настройки', ''),
                     ('Выйти', pygame.QUIT))
 
+    def __init__(self):
+        super().__init__()
+
+        self.margin_left = 40
+        self.margin_top = 30
+
     def set_bg(self):
         scale = 450, 400
         position = 20, config.HEIGHT - 420
