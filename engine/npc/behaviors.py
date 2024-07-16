@@ -1,12 +1,5 @@
-import math
-
 import pygame
 import random
-
-import pymunk
-
-import config
-from engine.ships import Cruiser
 
 
 class BasePatrolling:
@@ -25,13 +18,12 @@ class BasePatrolling:
 
     def update_patrol_points(self):
         self.patrol_points = [
-            (random.randint(1, 1500), random.randint(1, 1500)) for i in range(random.randrange(3, 10))
+            (random.randint(1, 3500), random.randint(1, 3500)) for i in range(random.randrange(3, 10))
         ]
 
     def update(self):
         target_point = self.patrol_points[self.current_point_index]
         self.ship.update_rotate_point()
-
         keys_dict = {
             pygame.K_w: False,
             pygame.K_SPACE: False,
@@ -42,7 +34,7 @@ class BasePatrolling:
         current_angle = self.ship.body.angle
         angle_difference = abs(target_angle - current_angle)
 
-        if angle_difference < math.radians(1):
+        if angle_difference < 0.08:
             self.ship.body.angle = target_angle
             distance_to_target = self.ship.body.position.get_distance(target_point)
             current_speed = self.ship.body.velocity.length

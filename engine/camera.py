@@ -1,7 +1,6 @@
 import pygame
 
-import config
-
+from game import config
 
 LERP_FACTOR = 0.5 / (config.FPS / 30)
 
@@ -25,7 +24,7 @@ class Camera:
             return -dimension * offset
         elif mouse_cord > dimension - self.perimeter_offset:
             offset = config.CAMERA_MAX_OFFSET * ((mouse_cord - (dimension - self.perimeter_offset))
-                                                   / self.perimeter_offset) ** 3
+                                                 / self.perimeter_offset) ** 3
             return dimension * offset
 
         return 0

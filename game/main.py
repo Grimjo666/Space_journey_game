@@ -5,9 +5,7 @@ import config
 from engine import events, scene
 from engine.scene import SceneManager
 
-from scenes.main_menu import MainMenuScene
-from scenes.pause_menu import PauseMenuScene
-from scenes.space import SpaceScene
+from scenes import SpaceScene, PauseMenuScene, MainMenuScene
 
 
 FIXED_TIME_STEP = 1.0 / 30
@@ -42,7 +40,7 @@ def main():
     clock = pygame.time.Clock()
 
     pygame.display.set_caption("Space snake")
-    icon = pygame.image.load('images/snake_icon.png').convert_alpha()
+    icon = pygame.image.load('game/images/snake_icon.png').convert_alpha()
     pygame.display.set_icon(icon)
 
     scene_manager = SceneManager()

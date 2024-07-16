@@ -1,9 +1,5 @@
 import pygame
 
-import config
-from engine import events
-
-
 FPS_STEP_COUNTER = 0
 
 

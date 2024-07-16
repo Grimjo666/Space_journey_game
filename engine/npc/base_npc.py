@@ -1,7 +1,6 @@
 import pygame
 
 from engine.npc import behaviors
-import engine.ships
 
 
 class BaseShipNPC:
@@ -21,23 +20,23 @@ class BaseShipNPC:
     def update(self):
         self.current_behavior.update()
 
-
-class NeutralShip(BaseShipNPC):
-    SHIP = engine.ships.Cruiser
-
-    def __init__(self, position):
-        super().__init__(position)
+    def draw(self, screen, camera):
+        self.ship.draw(screen, camera)
 
 
-class SpaceShipNPCManager:
-    def __init__(self, ships):
-        self.ships = ships
+class BaseNPCManager:
+    def __init__(self, npc_arr):
+        self.NPCs = npc_arr
 
     def update(self):
-        for ship in self.ships:
-            if ship.currnt_behavior is None:
-                ship.set_behavior()
-            ship.update()
+        for npc in self.NPCs:
+            if npc.current_behavior is None:
+                npc.set_behavior()
+            npc.update()
 
-    def draw(self):
-        pass
+    def draw(self, screen, camera):
+        for npc in self.NPCs:
+            npc.draw(screen, camera)
+
+    def get_npc(self):
+        return self.NPCs

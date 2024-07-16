@@ -1,13 +1,16 @@
-import random
-
 import pygame
 import pymunk
 import pymunk.pygame_util
 
-import config
-from engine import ships, space, events, scene
+from engine import events, scene
 from engine.camera import Camera
-from engine.npc.space_ships import SpaceShipNPCManager, NeutralShip
+from engine.space import PhysicalSpace
+
+from game.scenes.space.space_body_templates import Meteorite, Meteorite2
+from game.scenes.space.background import SpaceBG, SpaceBGPlanets
+from game.scenes.space.ship_templates import Cruiser
+from game import config
+from game.scenes.space.npcs.space_ships import ShipsNPCManager
 
 
 class SpaceScene(scene.BaseScene):
@@ -16,19 +19,19 @@ class SpaceScene(scene.BaseScene):
 
         self.camera = Camera()
 
-        self.background = space.SpaceBG(screen)
-        self.planets = space.SpaceBGPlanets(self.background.surface)
-        self.physical_space = space.PhysicalSpace()
+        self.background = SpaceBG(screen)
+        self.planets = SpaceBGPlanets(self.background.surface)
+        self.physical_space = PhysicalSpace()
         self.draw_options = pymunk.pygame_util.DrawOptions(screen)
 
         # звуки
-        self.bg_sound = pygame.mixer.Sound('sounds/bg_sound.mp3')
+        self.bg_sound = pygame.mixer.Sound('game/sounds/bg_sound.mp3')
         self.bg_sound.set_volume(config.BG_SOUND)
         self.bg_sound.play()
 
         self.screen_center = config.WIDTH // 2, config.HEIGHT // 2
 
-        self.player_ship = ships.Cruiser(self.screen_center)
+        self.player_ship = Cruiser(self.screen_center)
         self.npc_manager = None
 
         self.space_objects = None
@@ -37,20 +40,18 @@ class SpaceScene(scene.BaseScene):
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
 
         self.space_objects = [
-            space.Meteorite((100, 900)),
-            space.Meteorite((300, 1000)),
-            space.Meteorite((config.WIDTH, config.HEIGHT)),
-            space.Meteorite2((500, 500)),
-            space.Meteorite2((900, 900))
+            Meteorite((100, 900)),
+            Meteorite((300, 1000)),
+            Meteorite((config.WIDTH, config.HEIGHT)),
+            Meteorite2((500, 500)),
+            Meteorite2((900, 900))
 
         ]
 
-        npc_tup = (
-            NeutralShip((i, i))
-            for i in range(1, 1001, 100)
-        )
+        self.npc_manager = ShipsNPCManager()
 
-        self.npc_manager = SpaceShipNPCManager(npc_tup)
+        for npc in self.npc_manager.get_npc():
+            self.physical_space.add(npc.ship)
 
         self.physical_space.add(self.player_ship)
 
@@ -81,7 +82,11 @@ class SpaceScene(scene.BaseScene):
         self.physical_space.get_simulation_step()
         self.camera.update(self.player_ship)
 
+        # Обновляем игрока
         self.player_ship.update_rotate_point(self.camera)
+
+        # Обновляем поведение неписей
+        self.npc_manager.update()
 
         self.background.draw(self.camera)
         self.planets.draw(self.camera)
@@ -90,6 +95,8 @@ class SpaceScene(scene.BaseScene):
 
     def draw(self):
         self.player_ship.draw(self.screen, self.camera)  # Рисуем корабль
+
+        self.npc_manager.draw(self.screen, self.camera)  # Рисуем неписей
 
         for obj in self.space_objects:
             obj.draw(self.screen, self.camera)

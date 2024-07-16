@@ -1,6 +1,6 @@
 import pygame
 
-import config
+from game import config
 from engine import events
 
 
@@ -71,9 +71,16 @@ class Button(MarginMixin):
 
 
 class BaseMenu(MarginMixin):
-    FONT_PATH = 'fonts/Marske.ttf'
+    """
+    Обязательные переменные для заполнения: BUTTON_NAMES, BG_POSITION, BG_SCALE
+    """
+
+    FONT_PATH = 'game/fonts/Marske.ttf'
     BUTTON_NAMES = ()
     SIZE = 65
+
+    BG_POSITION = None
+    BG_SCALE = None
 
     BASE_COLOR = 'White'
     HOVER_COLOR = (121, 184, 233)
@@ -125,44 +132,7 @@ class BaseMenu(MarginMixin):
         return button.rect.collidepoint(mouse)
 
     def set_bg(self):
-        pass
-
-
-class MainMenu(BaseMenu):
-    BUTTON_NAMES = (('Новая игра', events.NEW_GAME),
-                    ('Продолжить', ''),
-                    ('Загрузить', ''),
-                    ('Настройки', ''),
-                    ('Выйти', pygame.QUIT))
-
-    def __init__(self):
-        super().__init__()
-
-        self.margin_left = 40
-        self.margin_top = 30
-
-    def set_bg(self):
-        scale = 450, 400
-        position = 20, config.HEIGHT - 420
-
-        self.background_surface = pygame.Surface(scale, pygame.SRCALPHA)
+        self.background_surface = pygame.Surface(self.BG_SCALE, pygame.SRCALPHA)
 
         self.background_surface.fill((0, 0, 0, 128))
-        self.background_rect = self.background_surface.get_rect(topleft=position)
-
-
-class PauseMenu(BaseMenu):
-    BUTTON_NAMES = (('Продолжить', events.CLOSE_PAUSE_MENU),
-                    ('Загрузить', ''),
-                    ('Настройки', ''),
-                    ('В главное меню', events.TO_MAIN_MENU),
-                    ('Выйти', pygame.QUIT))
-
-    def set_bg(self):
-        scale = config.WIDTH * 0.8, config.HEIGHT * 0.8
-        position = (config.WIDTH - scale[0]) / 2, (config.HEIGHT - scale[1]) / 2
-
-        self.background_surface = pygame.Surface(scale, pygame.SRCALPHA)
-
-        self.background_surface.fill((0, 0, 0, 128))
-        self.background_rect = self.background_surface.get_rect(topleft=position)
+        self.background_rect = self.background_surface.get_rect(topleft=self.BG_POSITION)

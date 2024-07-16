@@ -3,9 +3,8 @@ import math
 import pygame
 import pymunk
 
-import config
-from engine import events
-from engine.tools import ToolMixin
+from game import config
+from engine import events, scene
 
 
 # class ScaledSurface:
@@ -172,22 +171,6 @@ class BaseSpaceBG:
         self.surface.blit(self.image, (self.x + config.WIDTH, self.y - config.HEIGHT))
 
 
-class SpaceBG(BaseSpaceBG):
-    def __init__(self, surface):
-        super().__init__(surface, 'images/space/background/stars.png', bg_color=(33, 9, 74))
-
-    def draw(self, camera, **kwargs):
-        super().draw(camera, speed_factor=0.4)
-
-
-class SpaceBGPlanets(BaseSpaceBG):
-    def __init__(self, surface):
-        super().__init__(surface, 'images/space/space_objects/planets/saturn.png')
-
-    def draw(self, camera, **kwargs):
-        super().draw(camera, speed_factor=0.6)
-
-
 class SpaceObject:
     """
     collision_type = 1 - Космический мусор
@@ -281,26 +264,174 @@ class SpaceObject:
             pygame.event.post(object_destruction_event)
 
 
-class Meteorite(SpaceObject):
-    MASS = 500
-    ELASTICITY = 0.5
-    FRICTION = 1
-    SPRITE_PATH = 'images/space/space_objects/meteorites/meteorite_roma-test.png'
+class BaseShip(SpaceObject):
+    MAX_SPEED = 0
+    ENGINE_POWER = 0
 
-    HEALTH = 100
+    # Параметры ниже выставляются в градусах
+    ROTATE_SPEED = 0
+    ROTATE_SLOWDOWN_THRESHOLD = 0
+    MIN_ROTATE_SPEED = 0
 
+    def __init__(self, ship_position, body_type='circle'):
+        super().__init__(ship_position, body_type)
 
-class Meteorite2(SpaceObject):
-    MASS = 1000
-    ELASTICITY = 0.5
-    FRICTION = 1
-    SPRITE_PATH = 'images/space/space_objects/meteorites/meteorite_roma-test2.png'
+        self.rotate_speed = math.radians(self.ROTATE_SPEED * config.FPS_FACTOR)
+        self.rotate_slowdown_threshold = math.radians(self.ROTATE_SLOWDOWN_THRESHOLD)
+        self.min_rotate_speed = math.radians(self.MIN_ROTATE_SPEED * config.FPS_FACTOR)
 
-    HEALTH = 100
+        self._accelerator_sprites = None
+        self._rotate_left_sprites = None
+        self._rotate_right_sprites = None
+        self.motion_sprite_counter = -1
+        self.rotate_point = self.body.position
 
+    def update_rotate_point(self, camera=None):
+        if camera:
+            self.rotate_point = camera.apply(self.body.position)
+        else:
+            self.rotate_point = self.body.position
 
-class SpaceSnot(SpaceObject):
-    MASS = 100
-    ELASTICITY = 0.8
-    FRICTION = 1
-    SPRITE_PATH = 'images/space/space_objects/meteorites/space_snot.png'
+    def calculate_angle(self, target_pos=None):
+        if target_pos:
+            m_x, m_y = target_pos
+        else:
+            m_x, m_y = pygame.mouse.get_pos()
+
+        p_x, p_y = self.rotate_point
+
+        result_angle = math.atan2(m_y - p_y, m_x - p_x)
+
+        if result_angle < 0:  # Если угол отрицательный, добавляем 2 * пи
+            result_angle += 2 * math.pi
+
+        return result_angle
+
+    def get_movement_vector(self):
+
+        # Вычисление изменений по осям x и y
+        dx = self.MAX_SPEED * math.cos(self.body.angle)
+        dy = self.MAX_SPEED * math.sin(self.body.angle)
+
+        return pymunk.Vec2d(dx, dy)
+
+    def smooth_rotation(self, target_angle=None):
+        """
+        Метод должен вызываться после всех действий с перемещением корабля
+        :param target_angle:
+        :return:
+        """
+        self.add_rotate_animation(target_angle)
+
+        # Логика поворота с симуляцией массы корабля
+        if not target_angle:
+            target_angle = self.calculate_angle()
+
+        current_angle = self.body.angle
+        difference = target_angle - current_angle
+
+        if abs(difference) <= 0.08:
+            difference = 0
+
+        if difference > math.pi:
+            difference -= 2 * math.pi
+        elif difference < -math.pi:
+            difference += 2 * math.pi
+
+        # Замедление в конце поворота
+        if abs(difference) < self.rotate_slowdown_threshold:
+            rotate_speed = max(self.min_rotate_speed,
+                               self.rotate_speed * abs(difference) // self.rotate_slowdown_threshold)
+        else:
+            rotate_speed = self.rotate_speed
+
+        # Применение угловой скорости
+        if difference != 0:
+            target_angular_velocity = math.copysign(rotate_speed, difference)
+
+            # Ограничиваем угловую скорость
+            max_angular_velocity = rotate_speed
+            self.body.angular_velocity = max(min(target_angular_velocity, max_angular_velocity), -max_angular_velocity)
+
+        else:
+            self.body.angular_velocity = 0
+        # Применяем угловую скорость к текущему углу
+        self.body.angle += self.body.angular_velocity
+
+        # Убедитесь, что угол остается в диапазоне от 0 до 2*pi
+        self.body.angle %= 2 * math.pi
+        if self.body.angle < 0:
+            self.body.angle += 2 * math.pi
+
+    def move_ship(self):
+        self.add_accelerator_animation()
+
+        if scene.FPS_STEP_COUNTER == 0:
+            impulse = self.get_movement_vector() * self.ENGINE_POWER
+            self.body.apply_impulse_at_world_point(impulse, (0, 0))
+        self.limit_velocity()
+
+    def deceleration_ship(self):
+        if self.body.velocity.length < self.MAX_SPEED * 0.1:
+            self.body.velocity = pymunk.Vec2d(0, 0)
+        elif scene.FPS_STEP_COUNTER == 0:
+            self.body.velocity *= 0.95
+
+    def limit_velocity(self):
+        if self.body.velocity.length > self.MAX_SPEED:
+            self.body.velocity = self.body.velocity.normalized() * self.MAX_SPEED
+
+    def rotate_sprite(self):
+        return pygame.transform.rotate(self.current_sprite, -math.degrees(self.body.angle) - 90)
+
+    def add_accelerator_animation(self):
+        if scene.FPS_STEP_COUNTER == 0:
+            self.motion_sprite_counter += 1
+            if self.motion_sprite_counter == 4:
+                self.motion_sprite_counter = 0
+
+        self.overlay_sprites_list.append(self._accelerator_sprites[self.motion_sprite_counter])
+
+    def add_rotate_animation(self, target_angle=None):
+
+        if not target_angle:
+            target_angle = self.calculate_angle()
+
+        difference = target_angle - self.body.angle
+
+        if abs(difference) <= 0.08:
+            difference = 0
+
+        if difference > math.pi:
+            difference -= 2 * math.pi
+        elif difference < -math.pi:
+            difference += 2 * math.pi
+
+        # Если разница в углах больше, то вычисляем направление вращения
+        if abs(difference) > math.radians(0.5):
+            if difference < 0:
+                if scene.FPS_STEP_COUNTER == 0:  # настраиваем скорость анимации
+                    self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self._rotate_left_sprites)
+                self.overlay_sprites_list.append(self._rotate_left_sprites[self.motion_sprite_counter])
+            else:
+                if scene.FPS_STEP_COUNTER == 0:  # настраиваем скорость анимации
+                    self.motion_sprite_counter = (self.motion_sprite_counter + 1) % len(self._rotate_right_sprites)
+                self.overlay_sprites_list.append(self._rotate_right_sprites[self.motion_sprite_counter])
+        else:
+            self.overlay_sprites_list.append(self._sprite)
+
+    def inactivity_animation(self):
+        self.current_sprite = self._sprite
+
+    def ship_control(self, keys, target_angle=None):
+        # движение по нажатию на кнопку W
+        if keys[pygame.K_w] and not keys[pygame.K_SPACE]:
+            self.move_ship()  # Активируем движение корабля
+            # ускорение
+            if keys[pygame.K_LALT]:
+                pass
+
+        elif keys[pygame.K_SPACE]:
+            self.deceleration_ship()  # Активируем торможение корабля
+
+        self.smooth_rotation(target_angle)  # Активируем вращение корабля
