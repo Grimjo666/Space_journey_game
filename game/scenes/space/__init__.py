@@ -1,1 +1,1 @@
-from .space import SpaceScene
+from .scene import SpaceScene

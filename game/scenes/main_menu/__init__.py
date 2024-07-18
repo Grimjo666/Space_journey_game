@@ -1,3 +1,3 @@
-from .main_menu import MainMenuScene
+from .scene import MainMenuScene
 
 __all__ = ['MainMenuScene']

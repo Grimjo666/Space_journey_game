@@ -4,6 +4,7 @@ import pygame
 import pymunk
 
 from game import config
+
 from engine import events, scene
 
 
@@ -47,6 +48,12 @@ class PhysicalSpace:
 
     def add(self, obj):
         self.space.add(obj.body, obj.get_shape())
+
+        # Если у объекта есть родитель, то добавляем его в группу с родителем
+        if obj.parent_id:
+            obj.shape.filter = pymunk.ShapeFilter(group=obj.parent_id)
+        else:
+            obj.shape.filter = pymunk.ShapeFilter(group=id(obj))
 
     def remove(self, objs):
         self.space.remove(objs.body, objs.shape)
@@ -94,27 +101,37 @@ class PhysicalSpace:
         return damage
 
     def damage_handler(self, arbiter, space, data):
-        # Извлекаем данные о столкновении
-        (velocity_a, velocity_b, angular_velocity_a, angular_velocity_b, center_mass_a,
-         center_mass_b) = self.get_collision_data(arbiter)
+        from engine.shooting import BaseBullet
+        obj_a, obj_b = arbiter.shapes[0].object_data, arbiter.shapes[1].object_data
 
-        # Берем первую точку контакта для простоты
-        contact_point = arbiter.contact_point_set.points[0].point_a
+        # Если объект является выстрелом
+        if isinstance(obj_a, BaseBullet):
+            damage = obj_a.DAMAGE
+        elif isinstance(obj_b, BaseBullet):
+            damage = obj_b.DAMAGE
 
-        # Рассчитываем относительную скорость
-        relative_velocity = self.calculate_relative_velocity(velocity_a, velocity_b, angular_velocity_a,
-                                                             angular_velocity_b,
-                                                             contact_point, center_mass_a, center_mass_b)
+        else:
+            # Извлекаем данные о столкновении
+            (velocity_a, velocity_b, angular_velocity_a, angular_velocity_b, center_mass_a,
+             center_mass_b) = self.get_collision_data(arbiter)
 
-        # Получаем массы объектов
-        mass_a = arbiter.shapes[0].body.mass
-        mass_b = arbiter.shapes[1].body.mass
+            # Берем первую точку контакта для простоты
+            contact_point = arbiter.contact_point_set.points[0].point_a
 
-        # Рассчитываем силу столкновения
-        collision_force = self.calculate_collision_force(relative_velocity, mass_a, mass_b)
+            # Рассчитываем относительную скорость
+            relative_velocity = self.calculate_relative_velocity(velocity_a, velocity_b, angular_velocity_a,
+                                                                 angular_velocity_b,
+                                                                 contact_point, center_mass_a, center_mass_b)
 
-        # Рассчитываем урон
-        damage = self.calculate_damage(collision_force)
+            # Получаем массы объектов
+            mass_a = arbiter.shapes[0].body.mass
+            mass_b = arbiter.shapes[1].body.mass
+
+            # Рассчитываем силу столкновения
+            collision_force = self.calculate_collision_force(relative_velocity, mass_a, mass_b)
+
+            # Рассчитываем урон
+            damage = self.calculate_damage(collision_force)
 
         # Здесь вы можете обновить здоровье объектов или вызвать другие эффекты столкновения
         arbiter.shapes[0].object_data.take_damage(damage)
@@ -206,6 +223,8 @@ class SpaceObject:
 
         self.shape = None
 
+        self.parent_id = None
+
     def get_circle_shape(self):
         circle_shape = pymunk.Circle(self.body, self.radius)
         circle_shape.elasticity = self.ELASTICITY
@@ -273,6 +292,8 @@ class BaseShip(SpaceObject):
     ROTATE_SLOWDOWN_THRESHOLD = 0
     MIN_ROTATE_SPEED = 0
 
+    BASE_BULLET = None
+
     def __init__(self, ship_position, body_type='circle'):
         super().__init__(ship_position, body_type)
 
@@ -286,11 +307,18 @@ class BaseShip(SpaceObject):
         self.motion_sprite_counter = -1
         self.rotate_point = self.body.position
 
+        self.bullet_list = []
+        self.shot_delay = 0
+
     def update_rotate_point(self, camera=None):
         if camera:
             self.rotate_point = camera.apply(self.body.position)
         else:
             self.rotate_point = self.body.position
+
+    def update(self, camera=None):
+        self.update_rotate_point(camera)
+        self.shot_delay -= 1
 
     def calculate_angle(self, target_pos=None):
         if target_pos:
@@ -423,7 +451,8 @@ class BaseShip(SpaceObject):
     def inactivity_animation(self):
         self.current_sprite = self._sprite
 
-    def ship_control(self, keys, target_angle=None):
+    def ship_control(self, keys, mouse_keys, target_angle=None):
+
         # движение по нажатию на кнопку W
         if keys[pygame.K_w] and not keys[pygame.K_SPACE]:
             self.move_ship()  # Активируем движение корабля
@@ -431,7 +460,25 @@ class BaseShip(SpaceObject):
             if keys[pygame.K_LALT]:
                 pass
 
+        # Выстрел по нажатию на правую кнопку мыши
+        if mouse_keys[2]:
+            self.take_shot()
+
         elif keys[pygame.K_SPACE]:
             self.deceleration_ship()  # Активируем торможение корабля
 
         self.smooth_rotation(target_angle)  # Активируем вращение корабля
+
+    def take_shot(self):
+        """
+         Метод для стрельбы корабля
+        """
+        if self.shot_delay <= 0:
+
+            bullet = self.BASE_BULLET(self.body.position, self.body.angle)
+            self.bullet_list.append(bullet)
+            bullet.shot(self.get_movement_vector())
+
+            # связываем выстрел с кораблём
+            bullet.parent_id = id(self)
+            self.shot_delay = config.FPS

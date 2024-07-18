@@ -16,7 +16,7 @@ class Meteorite2(SpaceObject):
     FRICTION = 1
     SPRITE_PATH = 'game/images/space/space_objects/meteorites/meteorite_roma-test2.png'
 
-    HEALTH = 100
+    HEALTH = 500
 
 
 class SpaceSnot(SpaceObject):

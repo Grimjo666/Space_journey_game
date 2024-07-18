@@ -23,7 +23,7 @@ class BasePatrolling:
 
     def update(self):
         target_point = self.patrol_points[self.current_point_index]
-        self.ship.update_rotate_point()
+        self.ship.update()
         keys_dict = {
             pygame.K_w: False,
             pygame.K_SPACE: False,

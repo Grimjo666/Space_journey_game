@@ -5,12 +5,12 @@ import pymunk.pygame_util
 from engine import events, scene
 from engine.camera import Camera
 from engine.space import PhysicalSpace
+from engine.shooting import BaseBullet
 
 from game.scenes.space.space_body_templates import Meteorite, Meteorite2
 from game.scenes.space.background import SpaceBG, SpaceBGPlanets
 from game.scenes.space.ship_templates import Cruiser
 from game import config
-from game.scenes.space.npcs.space_ships import ShipsNPCManager
 
 
 class SpaceScene(scene.BaseScene):
@@ -44,14 +44,18 @@ class SpaceScene(scene.BaseScene):
             Meteorite((300, 1000)),
             Meteorite((config.WIDTH, config.HEIGHT)),
             Meteorite2((500, 500)),
+            Meteorite2((900, 900)),
+            Meteorite((100, 900)),
+            Meteorite((500, 100)),
+            Meteorite((config.WIDTH, config.HEIGHT)),
+            Meteorite2((500, 900)),
             Meteorite2((900, 900))
-
         ]
 
-        self.npc_manager = ShipsNPCManager()
-
-        for npc in self.npc_manager.get_npc():
-            self.physical_space.add(npc.ship)
+        # self.npc_manager = ShipsNPCManager()
+        #
+        # for npc in self.npc_manager.get_npc():
+        #     self.physical_space.add(npc.ship)
 
         self.physical_space.add(self.player_ship)
 
@@ -72,6 +76,7 @@ class SpaceScene(scene.BaseScene):
                 self.trigger_event(events.OPEN_PAUSE_MENU)
 
     def update(self):
+
         if not self.time_running:
             self.start_time = pygame.time.get_ticks()
             self.time_running = True
@@ -83,24 +88,31 @@ class SpaceScene(scene.BaseScene):
         self.camera.update(self.player_ship)
 
         # Обновляем игрока
-        self.player_ship.update_rotate_point(self.camera)
+        self.player_ship.update(self.camera)
 
         # Обновляем поведение неписей
-        self.npc_manager.update()
+        # self.npc_manager.update()
 
         self.background.draw(self.camera)
         self.planets.draw(self.camera)
 
-        self.player_ship.ship_control(keys=pygame.key.get_pressed())
+        self.player_ship.ship_control(keys=pygame.key.get_pressed(), mouse_keys=pygame.mouse.get_pressed())
+        if self.player_ship.bullet_list:
+            bullet = self.player_ship.bullet_list.pop()
+            self.space_objects.append(bullet)
+            self.physical_space.add(bullet)
+        # print(len(self.physical_space.space.bodies))
 
     def draw(self):
-        self.player_ship.draw(self.screen, self.camera)  # Рисуем корабль
-
-        self.npc_manager.draw(self.screen, self.camera)  # Рисуем неписей
+        # self.npc_manager.draw(self.screen, self.camera)  # Рисуем неписей
 
         for obj in self.space_objects:
             obj.draw(self.screen, self.camera)
 
+        for bullet in self.player_ship.bullet_list:
+            bullet.draw(self.screen, self.camera)
+
+        self.player_ship.draw(self.screen, self.camera)  # Рисуем корабль
         # Отрисовка объектов Pymunk
         # self.physical_space.space.debug_draw(self.draw_options)
 
