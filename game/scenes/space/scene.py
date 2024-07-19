@@ -5,7 +5,6 @@ import pymunk.pygame_util
 from engine import events, scene
 from engine.camera import Camera
 from engine.space import PhysicalSpace
-from engine.shooting import BaseBullet
 
 from game.scenes.space.npcs.space_ships import ShipsNPCManager
 from game.scenes.space.space_body_templates import Meteorite, Meteorite2
@@ -102,8 +101,12 @@ class SpaceScene(scene.BaseScene):
         self.planets.draw(self.camera)
 
         self.player_ship.ship_control(keys=pygame.key.get_pressed(), mouse_keys=pygame.mouse.get_pressed())
-        if self.player_ship.bullet_list:
-            bullet = self.player_ship.bullet_list.pop()
+
+        # достаём патрон у пушки
+        bullet = self.player_ship.first_weapon.get_bullet()
+
+        # Если патрон есть, добавляем его в игровое пространство
+        if bullet:
             self.space_objects.append(bullet)
             self.physical_space.add(bullet)
         # print(len(self.physical_space.space.bodies))
@@ -115,7 +118,8 @@ class SpaceScene(scene.BaseScene):
         for obj in self.space_objects:
             obj.draw(self.screen, self.camera)
 
-        for bullet in self.player_ship.bullet_list:
+        # Рисуем патроны
+        for bullet in self.player_ship.first_weapon.bullet_list:
             bullet.draw(self.screen, self.camera)
 
         self.player_ship.draw(self.screen, self.camera)  # Рисуем корабль

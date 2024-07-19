@@ -185,9 +185,9 @@ class PhysicalSpace:
 
         # Поверяем какой из объектов является выстрелом и берём его урон
         if isinstance(obj_a, BaseBullet):
-            damage = obj_a.DAMAGE
+            damage = obj_a.damage
         else:
-            damage = obj_b.DAMAGE
+            damage = obj_b.damage
 
         # Наносим урон объектам
         obj_a.take_damage(damage)
@@ -372,7 +372,7 @@ class BaseShip(SpaceObject):
     ROTATE_SLOWDOWN_THRESHOLD = 0
     MIN_ROTATE_SPEED = 0
 
-    BASE_BULLET = None
+    BASE_WEAPON = None
 
     def __init__(self, ship_position, body_type='circle'):
         super().__init__(ship_position, body_type)
@@ -387,8 +387,7 @@ class BaseShip(SpaceObject):
         self.motion_sprite_counter = -1
         self.rotate_point = self.body.position
 
-        self.bullet_list = []
-        self.shot_delay = 0
+        self.first_weapon = self.BASE_WEAPON(self.body.position, self.body.angle)
 
     def update_rotate_point(self, camera=None):
         if camera:
@@ -398,7 +397,7 @@ class BaseShip(SpaceObject):
 
     def update(self, camera=None):
         self.update_rotate_point(camera)
-        self.shot_delay -= 1
+        self.first_weapon.shot_delay -= 1
 
     def calculate_angle(self, target_pos=None):
         if target_pos:
@@ -540,9 +539,12 @@ class BaseShip(SpaceObject):
             if keys[pygame.K_LALT]:
                 pass
 
-        # Выстрел по нажатию на правую кнопку мыши
-        if mouse_keys[2]:
+        # Выстрел по нажатию на правую кнопку мыши с учётом задержки орудия
+        if mouse_keys[2] and self.first_weapon.shot_delay <= 0:
             self.take_shot()
+
+            # Включаем задержку
+            self.first_weapon.shot_delay = config.FPS * self.first_weapon.SHOT_DELAY_MULTIPLIER
 
         elif keys[pygame.K_SPACE]:
             self.deceleration_ship()  # Активируем торможение корабля
@@ -553,11 +555,7 @@ class BaseShip(SpaceObject):
         """
          Метод для стрельбы корабля
         """
-        if self.shot_delay <= 0:
-            bullet = self.BASE_BULLET(self.body.position, self.body.angle)
-            self.bullet_list.append(bullet)
-            bullet.shot(self.get_movement_vector())
-
-            # связываем выстрел с кораблём
-            bullet.parent_id = id(self)
-            self.shot_delay = config.FPS
+        # Обновляем объект-пушку
+        self.first_weapon.update(self.body.position, self.body.angle, self)
+        # Стреляем
+        self.first_weapon.shot(self.get_movement_vector())

@@ -1,7 +1,7 @@
 import pygame
 
 from engine.space import BaseShip
-from engine.shooting import BaseBullet
+from engine.shooting import BaseWeapon
 
 
 class Cruiser(BaseShip):
@@ -11,7 +11,7 @@ class Cruiser(BaseShip):
     ELASTICITY = 0.3
     FRICTION = 0.5
     SPRITE_PATH = 'game/images/space/ship_sprites/ship_2/ship_2.png'
-    BASE_BULLET = BaseBullet
+    BASE_WEAPON = BaseWeapon
 
     HEALTH = 300
 
