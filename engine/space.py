@@ -7,7 +7,6 @@ from game import config
 
 from engine import events, scene
 
-
 # class ScaledSurface:
 #     def __init__(self, width, height):
 #         self.width = width * 2
@@ -40,11 +39,24 @@ from engine import events, scene
 #         screen.blit(scaled_surface, scaled_rect)
 
 
+OBJECTS_TYPES = {
+    'any': 0,
+    'player': 1,
+    'friend': 2,
+    'enemy': 3,
+    'cosmic_body': 4,
+    'bullet': 5
+}
+
+
 class PhysicalSpace:
     def __init__(self):
         self.space = pymunk.Space()
-        self.handler = self.space.add_collision_handler(1, 1)
-        self.handler.begin = self.damage_handler
+
+        # Регистрация обработчика коллизий для всех нужных типов объектов
+        for type_a in OBJECTS_TYPES.values():
+            for type_b in OBJECTS_TYPES.values():
+                self.space.add_collision_handler(type_a, type_b).begin = self.collision_handler
 
     def add(self, obj):
         self.space.add(obj.body, obj.get_shape())
@@ -100,44 +112,86 @@ class PhysicalSpace:
         damage = collision_force * config.DAMAGE  # Коэффициент для регулирования урона
         return damage
 
-    def damage_handler(self, arbiter, space, data):
-        from engine.shooting import BaseBullet
-        obj_a, obj_b = arbiter.shapes[0].object_data, arbiter.shapes[1].object_data
+    def collision_handler(self, arbiter, space, data):
+        """
+        Обработчик столкновений в физическом пространстве игры.
+        Определяет тип сталкивающихся объектов и вызывает обработчики столкновений
+        :param arbiter:
+        :param space:
+        :param data:
+        :return:
+        """
 
-        # Если объект является выстрелом
-        if isinstance(obj_a, BaseBullet):
-            damage = obj_a.DAMAGE
-        elif isinstance(obj_b, BaseBullet):
-            damage = obj_b.DAMAGE
+        shape_a, shape_b = arbiter.shapes
+        type_a = shape_a.collision_type
+        type_b = shape_b.collision_type
+
+        any_obj = OBJECTS_TYPES['any']
+        player = OBJECTS_TYPES['player']
+        bullet = OBJECTS_TYPES['bullet']
+
+        # Если среди объектов есть снаряд
+        if bullet in (type_a, type_b):
+
+            # Если среди объектов только один снаряд
+            if not all((type_a == bullet, type_b == bullet)):
+                # Обрабатываем коллизию пули с любым другим объектом
+                self.handle_any_and_bullet_collision(shape_a, shape_b)
+            else:
+                print('Добавь обработку bullet X bullet')
+
+        elif player in (type_a, type_b):
+            self.handle_player_and_any_collision(arbiter)
 
         else:
-            # Извлекаем данные о столкновении
-            (velocity_a, velocity_b, angular_velocity_a, angular_velocity_b, center_mass_a,
-             center_mass_b) = self.get_collision_data(arbiter)
+            self.handle_any_collision(arbiter)
 
-            # Берем первую точку контакта для простоты
-            contact_point = arbiter.contact_point_set.points[0].point_a
+        return True
 
-            # Рассчитываем относительную скорость
-            relative_velocity = self.calculate_relative_velocity(velocity_a, velocity_b, angular_velocity_a,
-                                                                 angular_velocity_b,
-                                                                 contact_point, center_mass_a, center_mass_b)
+    def handle_any_collision(self, arbiter):
+        # Извлекаем данные о столкновении
+        (velocity_a, velocity_b, angular_velocity_a, angular_velocity_b, center_mass_a,
+         center_mass_b) = self.get_collision_data(arbiter)
 
-            # Получаем массы объектов
-            mass_a = arbiter.shapes[0].body.mass
-            mass_b = arbiter.shapes[1].body.mass
+        # Берем первую точку контакта для простоты
+        contact_point = arbiter.contact_point_set.points[0].point_a
 
-            # Рассчитываем силу столкновения
-            collision_force = self.calculate_collision_force(relative_velocity, mass_a, mass_b)
+        # Рассчитываем относительную скорость
+        relative_velocity = self.calculate_relative_velocity(velocity_a, velocity_b, angular_velocity_a,
+                                                             angular_velocity_b,
+                                                             contact_point, center_mass_a, center_mass_b)
 
-            # Рассчитываем урон
-            damage = self.calculate_damage(collision_force)
+        # Получаем массы объектов
+        mass_a = arbiter.shapes[0].body.mass
+        mass_b = arbiter.shapes[1].body.mass
 
-        # Здесь вы можете обновить здоровье объектов или вызвать другие эффекты столкновения
+        # Рассчитываем силу столкновения
+        collision_force = self.calculate_collision_force(relative_velocity, mass_a, mass_b)
+
+        # Рассчитываем урон
+        damage = self.calculate_damage(collision_force)
+
+        # Наносим урон объектам
         arbiter.shapes[0].object_data.take_damage(damage)
         arbiter.shapes[1].object_data.take_damage(damage)
 
-        return True
+    def handle_player_and_any_collision(self, arbiter):
+        self.handle_any_collision(arbiter)
+
+    @staticmethod
+    def handle_any_and_bullet_collision(shape_a, shape_b):
+        from engine.shooting import BaseBullet
+        obj_a, obj_b = shape_a.object_data, shape_b.object_data
+
+        # Поверяем какой из объектов является выстрелом и берём его урон
+        if isinstance(obj_a, BaseBullet):
+            damage = obj_a.DAMAGE
+        else:
+            damage = obj_b.DAMAGE
+
+        # Наносим урон объектам
+        obj_a.take_damage(damage)
+        obj_b.take_damage(damage)
 
 
 class BaseSpaceBG:
@@ -189,9 +243,8 @@ class BaseSpaceBG:
 
 
 class SpaceObject:
-    """
-    collision_type = 1 - Космический мусор
-    """
+    OBJECT_TYPE = 'any'
+
     MASS = 1
     ELASTICITY = 0
     FRICTION = 0
@@ -202,18 +255,22 @@ class SpaceObject:
 
     def __init__(self, position, body_type='circle'):
         self.health = self.HEALTH
+        self.health_view_time_counter = 0
 
         self._sprite = pygame.image.load(self.SPRITE_PATH).convert_alpha()
         self.current_sprite = self._sprite
         self.overlay_sprites_list = []
 
-        self.original_radius = self._sprite.get_rect().width // 2
-        self.radius = self.original_radius
+        self.width = self._sprite.get_width()
+        self.height = self._sprite.get_height()
 
         self.original_mass = self.MASS
         self.mass = self.MASS
 
         if body_type == 'circle':
+            self.original_radius = self._sprite.get_rect().width // 2
+            self.radius = self.original_radius
+
             self.body = pymunk.Body(self.mass, pymunk.moment_for_circle(self.mass, 0, self.radius))
             self.body.type = 'circle'
         elif body_type == 'box':
@@ -229,14 +286,14 @@ class SpaceObject:
         circle_shape = pymunk.Circle(self.body, self.radius)
         circle_shape.elasticity = self.ELASTICITY
         circle_shape.friction = self.FRICTION
-        circle_shape.collision_type = 1
+        circle_shape.collision_type = OBJECTS_TYPES[self.OBJECT_TYPE]
         circle_shape.object_data = self
         return circle_shape
 
     def get_box_shape(self):
         box_shape = pymunk.Poly.create_box(self.body, self._sprite.get_size())
         box_shape.elasticity = self.ELASTICITY
-        box_shape.collision_type = 1
+        box_shape.collision_type = OBJECTS_TYPES[self.OBJECT_TYPE]
         box_shape.object_data = self
         return box_shape
 
@@ -273,6 +330,11 @@ class SpaceObject:
         rect = sprite.get_rect(center=position)
         surface.blit(sprite, rect.topleft)
 
+        # Рисуем шкалу здоровья, если объект не игрок или снаряд
+        if self.health_view_time_counter != 0 and self.OBJECT_TYPE not in ('bullet', 'player'):
+            self.draw_health_bar(surface, camera)
+            self.health_view_time_counter -= 1
+
     def rotate_sprite(self):
         return pygame.transform.rotate(self.current_sprite, -math.degrees(self.body.angle))
 
@@ -281,6 +343,24 @@ class SpaceObject:
         if self.health <= 0:
             object_destruction_event = pygame.event.Event(events.OBJECT_DESTRUCTION, object=self)
             pygame.event.post(object_destruction_event)
+
+        self.health_view_time_counter = config.FPS * config.VIEW_HEALTH_BAR_TIME
+
+    def draw_health_bar(self, screen, camera):
+        # Вычисляем позицию health bar с учётом размеров объекта
+        x = self.body.position[0] - self.width / 2
+        y = self.body.position[1] - self.height / 2
+
+        # Корректируем позицию относительно смещения камеры
+        position = camera.apply((x, y))
+
+        # Рассчитываем ширину внутреннего заполнения
+        fill_width = int(150 * (self.health / self.HEALTH))
+
+        # Рисуем внутреннее заполнение
+        pygame.draw.rect(screen, 'Red', (*position, fill_width, 10))
+        # Рисуем обводку
+        pygame.draw.rect(screen, 'Yellow', (*position, 150, 10), 2)
 
 
 class BaseShip(SpaceObject):
@@ -474,7 +554,6 @@ class BaseShip(SpaceObject):
          Метод для стрельбы корабля
         """
         if self.shot_delay <= 0:
-
             bullet = self.BASE_BULLET(self.body.position, self.body.angle)
             self.bullet_list.append(bullet)
             bullet.shot(self.get_movement_vector())

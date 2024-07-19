@@ -1,10 +1,9 @@
 import pygame
 
-from engine import space, events, menu, scene
-from engine.menu import BaseMenu
+from engine import events, scene
+from engine.interface.menu import BaseMenu
 
 from game import config
-from game.scenes.space.background import SpaceBG
 
 
 class PauseMenu(BaseMenu):

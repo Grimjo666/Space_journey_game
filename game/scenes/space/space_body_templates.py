@@ -2,6 +2,8 @@ from engine.space import SpaceObject
 
 
 class Meteorite(SpaceObject):
+    OBJECT_TYPE = 'cosmic_body'
+
     MASS = 500
     ELASTICITY = 0.5
     FRICTION = 1
@@ -11,6 +13,8 @@ class Meteorite(SpaceObject):
 
 
 class Meteorite2(SpaceObject):
+    OBJECT_TYPE = 'cosmic_body'
+
     MASS = 1000
     ELASTICITY = 0.5
     FRICTION = 1
@@ -20,6 +24,8 @@ class Meteorite2(SpaceObject):
 
 
 class SpaceSnot(SpaceObject):
+    OBJECT_TYPE = 'cosmic_body'
+
     MASS = 100
     ELASTICITY = 0.8
     FRICTION = 1

@@ -4,6 +4,8 @@ from game import config
 
 
 class BaseBullet(SpaceObject):
+    OBJECT_TYPE = 'bullet'
+
     SPRITE_PATH = 'game/images/space/bullets/base_bullet.png'
 
     MASS = 1

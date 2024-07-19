@@ -2,7 +2,7 @@ import pygame
 import pygame.gfxdraw
 
 from engine import scene, events
-from engine.menu import BaseMenu
+from engine.interface.menu import BaseMenu
 from game import config
 
 

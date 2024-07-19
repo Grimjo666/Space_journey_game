@@ -59,7 +59,7 @@ class BasePatrolling:
 
                     self.current_point_index = (self.current_point_index + 1) % len(self.patrol_points)
 
-        self.ship.ship_control(keys=keys_dict, target_angle=target_angle)
+        self.ship.ship_control(keys=keys_dict, mouse_keys=[False, False, False], target_angle=target_angle)
 
     def draw_patrole_points(self, screen, camera):
         """

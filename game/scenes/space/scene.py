@@ -7,10 +7,15 @@ from engine.camera import Camera
 from engine.space import PhysicalSpace
 from engine.shooting import BaseBullet
 
+from game.scenes.space.npcs.space_ships import ShipsNPCManager
 from game.scenes.space.space_body_templates import Meteorite, Meteorite2
 from game.scenes.space.background import SpaceBG, SpaceBGPlanets
 from game.scenes.space.ship_templates import Cruiser
 from game import config
+
+
+class Player(Cruiser):
+    OBJECT_TYPE = 'player'
 
 
 class SpaceScene(scene.BaseScene):
@@ -31,7 +36,7 @@ class SpaceScene(scene.BaseScene):
 
         self.screen_center = config.WIDTH // 2, config.HEIGHT // 2
 
-        self.player_ship = Cruiser(self.screen_center)
+        self.player_ship = Player(self.screen_center)
         self.npc_manager = None
 
         self.space_objects = None
@@ -52,10 +57,10 @@ class SpaceScene(scene.BaseScene):
             Meteorite2((900, 900))
         ]
 
-        # self.npc_manager = ShipsNPCManager()
-        #
-        # for npc in self.npc_manager.get_npc():
-        #     self.physical_space.add(npc.ship)
+        self.npc_manager = ShipsNPCManager()
+
+        for npc in self.npc_manager.get_npc():
+            self.physical_space.add(npc.ship)
 
         self.physical_space.add(self.player_ship)
 
@@ -91,7 +96,7 @@ class SpaceScene(scene.BaseScene):
         self.player_ship.update(self.camera)
 
         # Обновляем поведение неписей
-        # self.npc_manager.update()
+        self.npc_manager.update()
 
         self.background.draw(self.camera)
         self.planets.draw(self.camera)
@@ -104,7 +109,8 @@ class SpaceScene(scene.BaseScene):
         # print(len(self.physical_space.space.bodies))
 
     def draw(self):
-        # self.npc_manager.draw(self.screen, self.camera)  # Рисуем неписей
+
+        self.npc_manager.draw(self.screen, self.camera)  # Рисуем неписей
 
         for obj in self.space_objects:
             obj.draw(self.screen, self.camera)
