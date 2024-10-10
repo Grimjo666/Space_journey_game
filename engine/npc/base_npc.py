@@ -1,6 +1,7 @@
 import pygame
 
 from engine.npc import behaviors
+from engine.npc.npc_vision import apply_rays
 
 
 class BaseShipNPC:

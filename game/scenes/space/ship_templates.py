@@ -5,8 +5,8 @@ from engine.shooting import BaseWeapon
 
 
 class Cruiser(BaseShip):
-    MAX_SPEED = 500
-    MASS = 500
+    MAX_SPEED = 900
+    MASS = 400
     ENGINE_POWER = 15
     ELASTICITY = 0.3
     FRICTION = 0.5

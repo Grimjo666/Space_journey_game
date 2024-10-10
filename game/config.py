@@ -1,7 +1,7 @@
 WIDTH = 1920
 HEIGHT = 1080
 
-FPS = 144
+FPS = 60
 FPS_FACTOR = 30 / FPS
 
 BG_SOUND = 0
@@ -14,3 +14,4 @@ CAMERA_PERIMETER_OFFSET = 100
 CAMERA_MAX_OFFSET = 0.4
 
 start_scene_timer_test = 0
+

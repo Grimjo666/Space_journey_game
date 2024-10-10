@@ -1,4 +1,5 @@
 import pygame
+from collections import defaultdict
 
 FPS_STEP_COUNTER = 0
 
@@ -99,3 +100,63 @@ class SceneManager:
         for scene in self.scenes.values():
             if scene.active:
                 scene.scene()
+
+
+class Grid:
+    """Класс, являющийся системой хранения объектов в сцене."""
+    def __init__(self, world_scale, cell_size):
+        self.cell_size = cell_size
+        self.grid_width = world_scale[0] // cell_size
+        self.grid_height = world_scale[1] // cell_size
+        self.cells = defaultdict(list)
+        self.hash_objs = {}
+
+    def add_object(self, obj):
+        """Добавляем объект в нужную ячейку сетки."""
+        x, y = obj.body.position
+        cell = (int(x // self.cell_size), int(y // self.cell_size))
+
+        # Если объект есть в хэше, проверяем, остался ли он в своей ячейке или нет
+        old_cell = self.hash_objs.get(obj)
+        if old_cell and old_cell != cell:
+            self.cells[old_cell].remove(obj)
+
+        # Обновляем хэш и добавляем объект в новую ячейку
+        self.hash_objs[obj] = cell
+        self.cells[cell].append(obj)
+
+    def update(self):
+        """Обновляем позиции всех объектов в сетке."""
+        for obj in self.get_all_obj():
+            x, y = obj.body.position
+            cell = (int(x // self.cell_size), int(y // self.cell_size))
+            if self.hash_objs.get(obj) != cell:
+                self.add_object(obj)
+
+    def remove(self, obj):
+        """Удаляем объект из сетки."""
+        cell = self.hash_objs.get(obj)
+        if cell and obj in self.cells[cell]:
+            self.cells[cell].remove(obj)
+            del self.hash_objs[obj]  # Удаляем объект из хэша
+
+    def get_neighboring_objects(self, obj):
+        """Возвращает объекты из ячейки с текущим объектом и соседних ячеек."""
+        x, y = obj.body.position
+        cell_x = int(x // self.cell_size)
+        cell_y = int(y // self.cell_size)
+
+        neighboring_objects = []
+
+        # Перебираем соседние ячейки (включая текущую)
+        for dx in range(-1, 2):  # -1, 0, 1 - сдвиг по оси X
+            for dy in range(-1, 2):  # -1, 0, 1 - сдвиг по оси Y
+                neighbor_cell = (cell_x + dx, cell_y + dy)
+                neighboring_objects.extend(self.cells[neighbor_cell])
+
+        return neighboring_objects
+
+    def get_all_obj(self):
+        """Возвращает все объекты из всех ячеек."""
+        return (obj for objs_array in self.cells.values() for obj in objs_array)
+

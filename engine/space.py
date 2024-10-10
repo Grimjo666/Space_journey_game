@@ -7,37 +7,6 @@ from game import config
 
 from engine import events, scene
 
-# class ScaledSurface:
-#     def __init__(self, width, height):
-#         self.width = width * 2
-#         self.height = height * 2
-#         self.temp_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-#         self.center = (width, height)
-#
-#     def add(self, space_obj):
-#         from .ships import BaseShip
-#
-#         sprite = space_obj.sprite
-#         if isinstance(space_obj, BaseShip):
-#             sprite = space_obj.current_sprite
-#
-#         correct_position = (
-#             self.center[0] + (space_obj.body.position.x - self.center[0]),
-#             self.center[1] + (space_obj.body.position.y - self.center[1])
-#         )
-#
-#         rect = sprite.get_rect(center=correct_position)
-#         self.temp_surface.blit(sprite, rect.topleft)
-#
-#     def draw_on_screen(self, screen):
-#         scaled_surface = pygame.transform.scale(
-#             self.temp_surface,
-#             (int(self.width * config.ZOOM), int(self.height * config.ZOOM))
-#         )
-#
-#         scaled_rect = scaled_surface.get_rect(center=screen.get_rect().center)
-#         screen.blit(scaled_surface, scaled_rect)
-
 
 OBJECTS_TYPES = {
     'any': 0,

@@ -15,3 +15,7 @@ class ToolMixin:
         y = self.round(vec[1])
 
         return pymunk.Vec2d(x, y)
+
+
+def coord_adjustment(coord: tuple | list, adjust: tuple | list):
+    return coord[0] + adjust[0], coord[1] + adjust[1]

@@ -1,9 +1,11 @@
 import pygame
 import pymunk
 import pymunk.pygame_util
+import random
 
 from engine import events, scene
 from engine.camera import Camera
+from engine.scene import Grid
 from engine.space import PhysicalSpace
 
 from game.scenes.space.npcs.space_ships import ShipsNPCManager
@@ -11,6 +13,9 @@ from game.scenes.space.space_body_templates import Meteorite, Meteorite2
 from game.scenes.space.background import SpaceBG, SpaceBGPlanets
 from game.scenes.space.ship_templates import Cruiser
 from game import config
+
+
+WORLD_SCALE = 10000, 10000
 
 
 class Player(Cruiser):
@@ -40,21 +45,21 @@ class SpaceScene(scene.BaseScene):
 
         self.space_objects = None
 
+        self.grid = Grid(world_scale=WORLD_SCALE, cell_size=200)  # Сетка с игровыми объектами
+
     def create_objects(self):
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
 
-        self.space_objects = [
+        for obj in [
             Meteorite((100, 900)),
             Meteorite((300, 1000)),
             Meteorite((config.WIDTH, config.HEIGHT)),
             Meteorite2((500, 500)),
             Meteorite2((900, 900)),
-            Meteorite((100, 900)),
-            Meteorite((500, 100)),
-            Meteorite((config.WIDTH, config.HEIGHT)),
-            Meteorite2((500, 900)),
-            Meteorite2((900, 900))
-        ]
+            *[Meteorite((random.randrange(-10000, 10000), random.randrange(-10000, 10000))) for _ in range(100)],
+            *[Meteorite2((random.randrange(-10000, 10000), random.randrange(-10000, 10000))) for _ in range(100)]
+        ]:
+            self.grid.add_object(obj)
 
         self.npc_manager = ShipsNPCManager()
 
@@ -63,7 +68,7 @@ class SpaceScene(scene.BaseScene):
 
         self.physical_space.add(self.player_ship)
 
-        for obj in self.space_objects:
+        for obj in self.grid.get_all_obj():
             self.physical_space.add(obj)
 
     def handle_event(self, event):
@@ -71,9 +76,10 @@ class SpaceScene(scene.BaseScene):
             self.stop()
 
         elif event.type == events.OBJECT_DESTRUCTION:
-            if event.object in self.space_objects:
+            if event.object in self.grid.get_all_obj():
                 self.physical_space.remove(event.object)
-                self.space_objects.remove(event.object)
+
+                self.grid.remove(event.object)
 
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
@@ -107,15 +113,16 @@ class SpaceScene(scene.BaseScene):
 
         # Если патрон есть, добавляем его в игровое пространство
         if bullet:
-            self.space_objects.append(bullet)
+            self.grid.add_object(bullet)
             self.physical_space.add(bullet)
-        # print(len(self.physical_space.space.bodies))
+
+        # Применяем рейкастинг для зрения ии
 
     def draw(self):
 
         self.npc_manager.draw(self.screen, self.camera)  # Рисуем неписей
 
-        for obj in self.space_objects:
+        for obj in self.grid.get_all_obj():
             obj.draw(self.screen, self.camera)
 
         # Рисуем патроны
