@@ -127,11 +127,18 @@ class Grid:
 
     def update(self):
         """Обновляем позиции всех объектов в сетке."""
+        objects_to_update = []
+
+        # Собираем объекты, которые нужно переместить
         for obj in self.get_all_obj():
             x, y = obj.body.position
             cell = (int(x // self.cell_size), int(y // self.cell_size))
             if self.hash_objs.get(obj) != cell:
-                self.add_object(obj)
+                objects_to_update.append(obj)
+
+        # После итерации по всем объектам обновляем их позиции
+        for obj in objects_to_update:
+            self.add_object(obj)
 
     def remove(self, obj):
         """Удаляем объект из сетки."""

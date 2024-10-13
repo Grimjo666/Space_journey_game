@@ -45,7 +45,7 @@ class SpaceScene(scene.BaseScene):
 
         self.space_objects = None
 
-        self.grid = Grid(world_scale=WORLD_SCALE, cell_size=200)  # Сетка с игровыми объектами
+        self.grid = Grid(world_scale=WORLD_SCALE, cell_size=500)  # Сетка с игровыми объектами
 
     def create_objects(self):
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
@@ -61,12 +61,12 @@ class SpaceScene(scene.BaseScene):
         ]:
             self.grid.add_object(obj)
 
+        self.grid.add_object(self.player_ship)
+
         self.npc_manager = ShipsNPCManager()
 
         for npc in self.npc_manager.get_npc():
-            self.physical_space.add(npc.ship)
-
-        self.physical_space.add(self.player_ship)
+            self.grid.add_object(npc.ship)
 
         for obj in self.grid.get_all_obj():
             self.physical_space.add(obj)
@@ -116,15 +116,19 @@ class SpaceScene(scene.BaseScene):
             self.grid.add_object(bullet)
             self.physical_space.add(bullet)
 
-        # Применяем рейкастинг для зрения ии
+        # Обновляем информацию об объектах в игровой сетке
+        if self.time % 200 < 50:  # обновляем сетку примерно 5 раз в секунду
+            self.grid.update()
 
     def draw(self):
+        if self.time % 1000 < 50:
+            print(self.grid.get_neighboring_objects(self.player_ship))
+            print('-----------------')
 
         self.npc_manager.draw(self.screen, self.camera)  # Рисуем неписей
 
         for obj in self.grid.get_all_obj():
             obj.draw(self.screen, self.camera)
-
         # Рисуем патроны
         for bullet in self.player_ship.first_weapon.bullet_list:
             bullet.draw(self.screen, self.camera)
