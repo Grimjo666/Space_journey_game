@@ -43,8 +43,6 @@ class SpaceScene(scene.BaseScene):
         self.player_ship = Player(self.screen_center)
         self.npc_manager = None
 
-        self.space_objects = None
-
         self.grid = Grid(world_scale=WORLD_SCALE, cell_size=200)  # Сетка с игровыми объектами
 
     def create_objects(self):
