@@ -17,16 +17,16 @@ class ShipsNPCManager(BaseNPCManager):
         ships = (
             NeutralShip((200, 500)),
             NeutralShip((200, 800)),
-            NeutralShip((600, 500)),
-            NeutralShip((400, 1000)),
-            NeutralShip((400, 1600)),
-            NeutralShip((1800, 1000)),
-            NeutralShip((2000, 1500)),
-            NeutralShip((2000, 1800)),
-            NeutralShip((600, 1500)),
-            NeutralShip((500, 1500)),
-            NeutralShip((3000, 1800)),
-            NeutralShip((600, 1500)),
+            # NeutralShip((600, 500)),
+            # NeutralShip((400, 1000)),
+            # NeutralShip((400, 1600)),
+            # NeutralShip((1800, 1000)),
+            # NeutralShip((2000, 1500)),
+            # NeutralShip((2000, 1800)),
+            # NeutralShip((600, 1500)),
+            # NeutralShip((500, 1500)),
+            # NeutralShip((3000, 1800)),
+            # NeutralShip((600, 1500)),
         )
 
         super().__init__(ships)

@@ -43,8 +43,6 @@ class SpaceScene(scene.BaseScene):
         self.player_ship = Player(self.screen_center)
         self.npc_manager = None
 
-        self.space_objects = None
-
         self.grid = Grid(world_scale=WORLD_SCALE, cell_size=500)  # Сетка с игровыми объектами
 
     def create_objects(self):
@@ -121,9 +119,6 @@ class SpaceScene(scene.BaseScene):
             self.grid.update()
 
     def draw(self):
-        if self.time % 1000 < 50:
-            print(self.grid.get_neighboring_objects(self.player_ship))
-            print('-----------------')
 
         self.npc_manager.draw(self.screen, self.camera)  # Рисуем неписей
 
@@ -135,5 +130,5 @@ class SpaceScene(scene.BaseScene):
 
         self.player_ship.draw(self.screen, self.camera)  # Рисуем корабль
         # Отрисовка объектов Pymunk
-        # self.physical_space.space.debug_draw(self.draw_options)
+        self.physical_space.space.debug_draw(self.draw_options)
 
